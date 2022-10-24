@@ -196,7 +196,7 @@ var cnItems = {
     "Every creature consumes": "每个生物都会消耗",
     "Fighter": "战士",
     "First assistants": "第一助理",
-    "Free workers:": "免费工人：",
+    "Free workers:": "空闲工人：",
     "Have 5 supporters and 1 miner": "有5个支持者和1个矿工",
     "Herbalism": "草药学",
     "Mage": "法师",
