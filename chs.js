@@ -49,7 +49,7 @@ var cnItems = {
     "Energy": "能量",
     "Fortunately you found some bonfire not such far away from where you awaken. You put some sticks to flame, and it started\n            burning with new power. Well, now you can take some rest": "幸运的是，你在离你醒来的地方不远的地方发现了一些篝火。 你把一些棍子点燃，它开始\n以新的力量燃烧。 好了，现在你可以休息一下了",
     "Gold": "黄金",
-    "Idlemancery": "无所事事",
+    "Idlemancery": "巫术放置",
     "Learning": "学习",
     "Locked": "未解锁",
     "No actions available": "没有可用的操作",
