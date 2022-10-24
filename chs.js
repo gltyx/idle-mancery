@@ -253,7 +253,7 @@ var cnItems = {
     "You looked at book that you have almost read: -- What kind of knowledge? Where can I take it?": "您看了几乎读过的书： -- 什么样的知识？我可以把它带到哪里？",
     "You spent enough time boiling flasks. Seems like you still need more. More resources, more creatures, more might...": "你花了足够的时间煮烧瓶。看来你还需要更多。更多的资源，更多的生物，更多的力量……",
     "You: -- Smiled slightly": "你：——微微一笑",
-    "Advanced soul harvester": "Advanced soul harvester",
+    "Advanced soul harvester": "高级灵魂收割机",
     "Purchase book that further increase your souls gain": "购买进一步增加你的灵魂增益的书",
     "": "",
     "": "",
