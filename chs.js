@@ -102,7 +102,7 @@ var cnItems = {
     "Energy orb": "能量球",
     "Expand gold storage": "扩大黄金存储",
     "Expansion spell": "扩张法术",
-    "Increase max energy": "增加最大能量",
+    "Increase": "增加",
     "Magic": "魔法",
     "Mana": "法力",
     "Mana effiency": "法力效率",
@@ -301,7 +301,7 @@ var cnPostfix = {
     " / s": " / 秒",
     " energy/sec": " 能量/秒",
     " max energy": " 最大能量",
-    "": "",
+    " max gold": " 最大黄金",
     "": "",
     "": "",
 }
