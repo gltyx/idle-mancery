@@ -252,7 +252,7 @@
 
         static getAvailable() {
             const dbList = shopData;
-            const available = dbList.filter(one => one.isUnlocked() && !ShopItems.purchased[one.id]).map(one => {
+            const available = dbList.filter(one => one.isUnlocked()).map(one => {
                 const cost = BasicResources.checkResourcesAvailable(one.getCost());
                 return {
                     id: one.id,
@@ -261,6 +261,7 @@
                     cost: cost,
                     isUnlocked: one.isUnlocked(),
                     isAvailable: cost.isAvailable,
+                    isPurchased: ShopItems.purchased[one.id],
                 }
             });
             return available;
@@ -353,6 +354,401 @@
         getEffect: (tiers) => tiers.reverse().reduce((acc, one) => acc *= (1 + 0.01*one.amount), 1),
     }];
 
+    class CreatureJobs {
+
+        static workers = {};
+
+        static getFreeWorkers() {
+            let free = CreatureBasic.numCreatures;
+            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
+                const workersPerJob = Math.min(free, state.current);
+                CreatureJobs.workers[jobId].current = workersPerJob;
+                free -= workersPerJob;
+            });
+            return free;
+        }
+
+        static getWorkerAmount(id) {
+            return CreatureJobs.workers[id]?.current || 0;
+        }
+
+        static getWorkerSkip(id) {
+            return CreatureJobs.workers[id]?.skip || false;
+        }
+
+        static updateWorkers({ id, amount }) {
+            let free = CreatureJobs.getFreeWorkers();
+            if(amount > free) {
+                amount = free;
+            }
+            if(amount < 0) {
+                amount = Math.max(amount, -1 * (CreatureJobs.workers[id]?.current || 0));
+            }
+            if(!CreatureJobs.workers[id]) {
+                CreatureJobs.workers[id] = {
+                    current: 0,
+                };
+            }
+            CreatureJobs.workers[id].current += amount;
+        }
+
+        static getList() {
+            const free = CreatureJobs.getFreeWorkers();
+            const jobs = jobsData.map(one => {
+
+                return {
+                    id: one.id,
+                    name: one.name,
+                    gain: one.getGain(1),
+                    cost: one.getCost(1),
+                    isUnlocked: one.isUnlocked(),
+                    current: CreatureJobs.workers[one.id]?.current || 0,
+                }
+            });
+            return {
+                free,
+                jobs
+            }
+        }
+
+        static getBalanceById(resourceId) {
+            let bal = 0;
+            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
+                const jobData = jobsData.find(one => one.id === jobId);
+                const gain = jobData.getGain(state.current);
+                const cost = jobData.getCost(state.current);
+                if(gain && gain[resourceId]) {
+                    bal += gain[resourceId];
+                }
+                if(cost && cost[resourceId]) {
+                    bal -= cost[resourceId];
+                }
+            });
+            return bal;
+        }
+
+        static process(dT) {
+            CreatureJobs.getFreeWorkers();
+            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
+                const jobData = jobsData.find(one => one.id === jobId);
+                const potCost = jobData.getCost(state.current);
+                const hasEnough = BasicResources.checkResourcesAvailable(potCost);
+                if(hasEnough.totalPercentage < dT) { // won't be able to afford, skip
+                    CreatureJobs.workers[jobId].skip = true;
+                    if(jobData.isUnstable) {
+                        CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
+                        CreatureBasic.numCreatures--;
+                    }
+                } else {
+                    CreatureJobs.workers[jobId].skip = false;
+                    CreatureJobs.workers[jobId].prodThisTick = BasicResources.multBatch(jobData.getGain(state.current), dT);
+                    CreatureJobs.workers[jobId].consThisTick = BasicResources.multBatch(jobData.getCost(state.current), dT);
+
+                    BasicResources.addBatch(CreatureJobs.workers[jobId].prodThisTick);
+                    BasicResources.subtractBatch(CreatureJobs.workers[jobId].consThisTick);
+                }
+
+            });
+        }
+
+        static sendToUI() {
+            const info = CreatureJobs.getList();
+            ColibriWorker.sendToClient('set_creatures_jobs_state', info);
+        }
+
+    }
+
+    const buildingData = [{
+        id: 'palace',
+        name: 'Palace',
+        description: 'Each level increase gold maximum and gold income by 10%',
+        getConstructionAmount: (level) => 1000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0.2 * Math.pow(2, level),
+        isUnlocked: () => true,
+        getCost: (level) => ({
+            gold: 1.e+5 * Math.pow(2, level),
+        })
+    },{
+        id: 'warehouse',
+        name: 'Warehouse',
+        description: 'Each level allows to store some amount of building resources',
+        getConstructionAmount: (level) => 2000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0.4 * Math.pow(2, level),
+        isUnlocked: () => true,
+        getCost: (level) => ({
+            gold: 2.e+5 * Math.pow(2, level),
+        })
+    },{
+        id: 'graveyard',
+        name: 'Graveyard',
+        description: 'Each level increase souls production by 10%',
+        getConstructionAmount: (level) => 5000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 1 * Math.pow(2, level),
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 1.e+6 * Math.pow(2, level),
+            wood: 10 * Math.pow(2, level),
+            stone: 20 * Math.pow(2, level),
+        })
+    },{
+        id: 'academy',
+        name: 'Academy',
+        description: 'Each level increase research production by 20%',
+        getConstructionAmount: (level) => 5000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 1 * Math.pow(2, level),
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 2.e+6 * Math.pow(2, level),
+            wood: 40 * Math.pow(2, level),
+            stone: 20 * Math.pow(2, level),
+        })
+    }];
+
+    const fmtVal = (val) => {
+        if(val == null) return null;
+        if(!val) return 0;
+        const sign = Math.sign(val);
+        const abs = Math.abs(val);
+        const orders = Math.log10(abs);
+        if(orders < 0) {
+            return `${sign < 0 ? '-' : ''}${abs.toFixed(2)}`;
+        }
+        const suffixId = Math.floor(orders / 3);
+        const mpart = (abs / (Math.pow(1000, suffixId))).toFixed(2);
+        let suffix = '';
+        switch (suffixId) {
+            case 1:
+                suffix = 'K';
+                break;
+            case 2:
+                suffix = 'M';
+                break;
+            case 3:
+                suffix = 'B';
+                break;
+            case 4:
+                suffix = 'T';
+                break;
+            case 5:
+                suffix = 'Qa';
+                break;
+            case 6:
+                suffix = 'Qi';
+                break;
+            case 7:
+                suffix = 'Sx';
+                break;
+            case 8:
+                suffix = 'Sp';
+                break;
+            case 9:
+                suffix = 'Oc';
+                break;
+            case 10:
+                suffix = 'No';
+                break;
+            case 11:
+                suffix = 'Dc';
+                break;
+        }
+        return `${sign < 0 ? '-' : ''}${mpart}${suffix}`;
+    };
+
+    function secondsToHms(d) {
+        if(!d) return '';
+        d = Number(d);
+        var h = Math.floor(d / 3600);
+        var m = Math.floor(d % 3600 / 60);
+        var s = Math.floor(d % 3600 % 60);
+
+        var hDisplay = h > 9 ? `${h}:` : `0${h}:`;
+        var mDisplay = m > 9 ? `${m}:` : `0${m}:`;
+        var sDisplay = s > 9 ? `${s}` : `0${s}`;
+        return hDisplay + mDisplay + sDisplay;
+    }
+
+    class BasicBuilding {
+
+        static buildings = {};
+
+        static usedLand = null;
+
+        static initialize() {
+            BasicBuilding.buildings = {};
+            return BasicBuilding.buildings;
+        }
+
+        static getBuildingLevel(id) {
+            return BasicBuilding.buildings[id]?.level || 0;
+        }
+
+        static getBuildingCapability(dT = 1) {
+            const jobData = jobsData.find(one => one.id === 'builder');
+            const potCost = jobData.getCost(CreatureJobs.getWorkerAmount('builder'));
+            BasicResources.checkResourcesAvailable(potCost);
+            const effiency = CreatureJobs.getWorkerSkip('builder') ? 0 : 1;
+            return effiency * CreatureJobs.getWorkerAmount('builder') * (
+                1 + 0.2 * BasicResearch.getResearchLevel('building')
+            ) * dT;
+        }
+
+        static getUsedTerritory() {
+            let usedLand = 0;
+            for(const key in BasicBuilding.buildings) {
+                const current = BasicBuilding.buildings[key];
+                const data = buildingData.find(one => one.id === key);
+                let pLev = current.level;
+                if(current.isPurchased) {
+                    pLev++;
+                }
+                const totalLand = Array.from({ length: pLev }).reduce(
+                    (acc, item, level) => {
+                        return acc + data.getTerritoryAmount(level)
+                    },
+                    0
+                );
+                console.log('calcLand: ', key, totalLand);
+                usedLand += totalLand;
+            }
+            return usedLand;
+        }
+
+        static getUsedTerritoryCached() {
+            if(BasicBuilding.usedLand == null) {
+                BasicBuilding.usedLand = BasicBuilding.getUsedTerritory();
+            }
+            return BasicBuilding.usedLand;
+        }
+
+        static checkEnoughtTerritory(id) {
+            const lvl = BasicBuilding.buildings[id]?.level || 0;
+            const data = buildingData.find(one => one.id === id);
+            const territoryToUse = data.getTerritoryAmount(lvl);
+            return resourcesData.find(one => one.id === 'territory').getMax() >= territoryToUse + BasicBuilding.getUsedTerritory();
+        }
+
+        static listAvailable() {
+            return buildingData.map((one) => {
+
+                const foundState = BasicBuilding.buildings[one.id] || {
+                    level: 0,
+                    inProgress: false,
+                    buildingProgress: 0,
+                    isPurchased: false
+                };
+
+                const cost = one.getCost(foundState.level);
+
+                const av = BasicResources.checkResourcesAvailable(cost);
+
+                const territoryNeeded = one.getTerritoryAmount(foundState.level);
+
+                const costShown = {
+                    ...cost,
+                    territory: territoryNeeded,
+                };
+
+                return {
+                    id: one.id,
+                    name: one.name,
+                    description: one.description,
+                    cost: costShown,
+                    isUnlocked: one.isUnlocked(),
+                    isAvailable: av.isAvailable && BasicBuilding.checkEnoughtTerritory(one.id),
+                    ...foundState,
+                    maxBuildingProgress: one.getConstructionAmount(foundState.level),
+                    timeFmt: BasicBuilding.getBuildingCapability()
+                        ? secondsToHms((one.getConstructionAmount(foundState.level) - foundState.buildingProgress) / BasicBuilding.getBuildingCapability())
+                        : 'Never',
+                    buildingSpeed: BasicBuilding.getBuildingCapability(),
+                }
+            })
+        }
+
+        static startBuilding(id) {
+            for(let key in BasicBuilding.buildings) {
+                if(key !== id && BasicBuilding.buildings[key].inProgress) {
+                    BasicBuilding.buildings[key].inProgress = false;
+                }
+            }
+            if(!BasicBuilding.buildings[id]) {
+                BasicBuilding.buildings[id] = {
+                    level: 0,
+                    inProgress: false,
+                    buildingProgress: 0,
+                    isPurchased: false
+                };
+            }
+            const data = buildingData.find(one => one.id === id);
+            if(!data) {
+                throw new Error(`Building ${id} not found`);
+            }
+            if(!BasicBuilding.buildings[id].isPurchased) {
+                const cost = data.getCost(BasicBuilding.buildings[id].level);
+                const availability = BasicResources.checkResourcesAvailable(cost);
+                if(!availability.isAvailable) {
+                    return;
+                }
+                BasicResources.subtractBatch(cost);
+                BasicBuilding.buildings[id].isPurchased = true;
+                BasicBuilding.usedLand = null; // reset cache
+            }
+            BasicBuilding.buildings[id].inProgress = true;
+        }
+
+        static process(dT) {
+            for(let key in BasicBuilding.buildings) {
+                if(BasicBuilding.buildings[key].inProgress) {
+                    BasicBuilding.buildings[key].buildingProgress += BasicBuilding.getBuildingCapability(dT);
+                    const one = buildingData.find(item => item.id === key);
+                    // check if done
+                    if(BasicBuilding.buildings[key].buildingProgress >= one.getConstructionAmount(BasicBuilding.buildings[key].level)) {
+                        BasicBuilding.buildings[key].level++;
+                        BasicBuilding.buildings[key].isPurchased = false;
+                        BasicBuilding.buildings[key].inProgress = false;
+                        BasicBuilding.buildings[key].buildingProgress = 0;
+                    }
+                }
+            }
+        }
+
+        static sendToUI() {
+            ColibriWorker.sendToClient('set_buildings_state', BasicBuilding.listAvailable());
+        }
+
+    }
+
+    const getSpellMultiplier = () => {
+        return BasicBanners.getBonus('green')
+            * (1 + 0.25 * BasicResearch.getResearchLevel('spellMaster'))
+            * (1 + 0.25*(ShopItems.purchased.magicStamp ? 1 : 0))
+            * (1 + 0.5*(ShopItems.purchased.appretienceManual ? 1 : 0))
+            * (1 + 0.5*(ShopItems.purchased.advancedMagic ? 1 : 0))
+            * Math.pow(1.01, BasicSkills.skillLevel('magic'))
+    };
+
+
+    const getExpansionEffect = () => {
+        return 5 * getSpellMultiplier();
+    };
+
+    const getEnergyOrbEffect = () => {
+        return 2 * getSpellMultiplier();
+    };
+
+    const getResourceMult = (id) => {
+        if(id === 'gold') {
+            return (1 + 0.1 * BasicBuilding.getBuildingLevel('palace'));
+        }
+        if(id === 'souls') {
+            return (1 + 0.1 * BasicBuilding.getBuildingLevel('graveyard'))
+        }
+        if(id === 'research') {
+            return (1 + 0.2 * BasicBuilding.getBuildingLevel('academy'))
+        }
+        return 1.0;
+    };
+
     const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect();
 
     const jobsData = [{
@@ -375,7 +771,7 @@
             energy: amount,
         }),
         getGain: (amount) => ({
-            gold: 3 * amount * globalMult() * BasicBanners.getBonus('yellow'),
+            gold: 3 * amount * globalMult() * BasicBanners.getBonus('yellow') * getResourceMult('gold'),
         }),
     },{
         id: 'mage',
@@ -399,13 +795,13 @@
             mana: 20 * amount,
         }),
         getGain: (amount) => ({
-            research: 0.1 * amount * globalMult() * BasicBanners.getBonus('violet'),
+            research: 0.1 * amount * globalMult() * BasicBanners.getBonus('violet') * getResourceMult('research'),
         }),
     },{
         id: 'fighter',
         name: 'Fighter',
         description: 'Fights and captures new territories for you',
-        isUnlocked: () => BasicResearch.getResearchLevel('fighting'),
+        isUnlocked: () => BasicResearch.getResearchLevel('fighting') > 0,
         getCost: (amount) => ({
             gold: 30 * amount,
             mana: 50 * amount,
@@ -414,6 +810,42 @@
 
         }),
         isUnstable: true,
+    },{
+        id: 'builder',
+        name: 'Builder',
+        description: 'Allows you building',
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+        getCost: (amount) => ({
+            gold: 1500 * amount,
+            mana: 100 * amount,
+        }),
+        getGain: (amount) => ({
+
+        }),
+    },{
+        id: 'woodcutter',
+        name: 'Woodcutter',
+        description: 'Provides raw material for building. Although it seems pretty cheap material, seems pretty hard to learn your creatures to cut wood',
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (amount) => ({
+            gold: 1500 * amount,
+            mana: 100 * amount,
+        }),
+        getGain: (amount) => ({
+            wood: 0.02 * amount * globalMult()
+        }),
+    },{
+        id: 'stonecutter',
+        name: 'Stonecutter',
+        description: 'Provides stone for building.',
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (amount) => ({
+            gold: 1200 * amount,
+            mana: 200 * amount,
+        }),
+        getGain: (amount) => ({
+            stone: 0.01 * amount * globalMult()
+        }),
     }];
 
     class CreatureBasic {
@@ -461,7 +893,7 @@
         static getInfo() {
             const bcost = BasicResources.checkResourcesAvailable(CreatureBasic.getSummonCost(CreatureBasic.settings.amount));
             if(bcost.isAvailable) {
-                bcost.isAvailable = BasicResources.resources.energy >= CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0;
+                bcost.isAvailable = resourcesData.find(one => one.id === 'energy').getMax() >= CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0;
             }
             return {
                 numCreatures: CreatureBasic.numCreatures,
@@ -476,7 +908,7 @@
             const creatureCost = CreatureBasic.getSummonCost(CreatureBasic.settings.amount);
             const cost = BasicResources.checkResourcesAvailable(creatureCost);
             if(cost.isAvailable) {
-                cost.isAvailable = BasicResources.resources.energy >= CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0;
+                cost.isAvailable = resourcesData.find(one => one.id === 'energy').getMax() >= CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0;
             }
             if(cost.isAvailable) {
                 BasicResources.subtractBatch(creatureCost);
@@ -584,7 +1016,7 @@
                         throw new Error(`Banners data was not loaded properly`)
                     }
                     let maxConversion = tierIndex < 5 ? BasicBanners.banners[bannerInfo.id][4-tierIndex]?.amount / 5 : CreatureBasic.numCreatures;
-                    let canPrestige = tierIndex === 5 && CreatureBasic.numCreatures >= 50;
+                    let canPrestige = tierIndex === 5 && CreatureBasic.numCreatures >= 51;
                     let isConvertable = maxConversion >= 1 && tierIndex < 5;
                     if(!current.amount) {
                         effectCumulative = 1.0;
@@ -625,7 +1057,7 @@
         }
 
         static doPrestige(id) {
-            if(CreatureBasic.numCreatures < 50) {
+            if(CreatureBasic.numCreatures < 51) {
                 return;
             }
             const amount = CreatureBasic.numCreatures;
@@ -641,7 +1073,7 @@
             let maxConversion = tierIndex < 5 && BasicBanners.banners[id][tierIndex-1]?.amount / 5;
             if(maxConversion >= 1) {
                 BasicBanners.banners[id][tierIndex-1].amount = 0;
-                BasicBanners.banners[id][tierIndex].amount = maxConversion;
+                BasicBanners.banners[id][tierIndex].amount += maxConversion;
             }
         }
 
@@ -650,6 +1082,209 @@
             ColibriWorker.sendToClient('set_banners_state', result);
         }
 
+
+    }
+
+    class FightParties {
+
+        static generateMy() {
+            const hpBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
+            const dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
+            const qt = CreatureJobs.getWorkerAmount('fighter');
+            return {
+                name: 'Warriors',
+                damage: 2 * dmgBonus,
+                maxHP: 5 * hpBonus,
+                defense: 0,
+                quantity: qt,
+            }
+        }
+
+        static generateEnemy(level, cell) {
+            return {
+                quantity: Math.round(3 + Math.random()*2),
+                damage: 0.5*Math.pow(1.5, level + cell/100),
+                maxHP: 2 * Math.pow(1.5, level + cell/100),
+                defense: 0,
+                name: 'Enemy Mock'
+            }
+        }
+
+    }
+
+    class BasicFight {
+
+        static parties = {};
+
+        static isInProgress = false;
+
+        static isLost = false;
+
+        static isWon = false;
+
+        static atckCooldown = 2;
+
+        static initialize() {
+            BasicFight.parties = {};
+            BasicFight.isInProgress = false;
+        }
+
+        static start(level, cell) {
+            BasicFight.atckCooldown = 2;
+            BasicFight.isInProgress = true;
+            BasicFight.isLost = false;
+            BasicFight.isWon = false;
+            BasicFight.parties = {
+                me: BasicFight.prepareToFight(FightParties.generateMy()),
+                enemy: BasicFight.prepareToFight(FightParties.generateEnemy(level, cell)),
+            };
+
+        }
+
+        static prepareToFight(side) {
+            return {
+                ...side,
+                realHP: side.maxHP * side.quantity,
+                maxRealHP: side.maxHP * side.quantity,
+            }
+        }
+
+        static process(dT) {
+            // check if fight was end
+            if(!BasicFight.isInProgress) return;
+            if(!BasicFight.parties.me || !BasicFight.parties.enemy) return;
+
+            if(BasicFight.parties.me.realHP <= 0) {
+                BasicFight.isLost = true;
+                BasicFight.isInProgress = false;
+                return;
+            }
+            if(BasicFight.parties.enemy.realHP <= 0) {
+                BasicFight.isWon = true;
+                BasicFight.isInProgress = false;
+                return;
+            }
+
+            BasicFight.atckCooldown -= dT;
+
+            if(BasicFight.atckCooldown <= 0) {
+                BasicFight.atckCooldown = 2;
+
+                // attacking
+                BasicFight.parties.me.realHP -= Math.max(0, BasicFight.parties.enemy.damage - BasicFight.parties.me.defense)
+                    * BasicFight.parties.enemy.quantity;
+
+                BasicFight.parties.me.quantity = Math.ceil(BasicFight.parties.me.realHP / BasicFight.parties.me.maxHP);
+
+                // defending
+                BasicFight.parties.enemy.realHP -= Math.max(0, BasicFight.parties.me.damage - BasicFight.parties.enemy.defense)
+                    * BasicFight.parties.me.quantity;
+
+                BasicFight.parties.enemy.quantity = Math.ceil(BasicFight.parties.enemy.realHP / BasicFight.parties.enemy.maxHP);
+
+            }
+        }
+
+        static sendToUI() {
+            ColibriWorker.sendToClient('set_battle_state', {
+                parties: BasicFight.parties,
+                isInProgress: BasicFight.isInProgress,
+            });
+        }
+
+    }
+
+    class BasicMap {
+
+        static state = {
+            level: 0,
+            cell: 0,
+            isForward: true,
+            isTurnedOn: false,
+            zonesAmounts: {},
+            maxLevel: 0,
+        }
+
+        static initialize() {
+            BasicMap.state = {
+                level: 0,
+                cell: 0,
+                isForward: true,
+                isTurnedOn: false,
+                zonesAmounts: {},
+                maxLevel: 0,
+            };
+            return BasicMap.state;
+        }
+
+        static switchTurned() {
+            BasicMap.state.isTurnedOn = !BasicMap.state.isTurnedOn;
+        }
+
+        static setLevel(level) {
+            const nLv = Math.max(
+                Math.min(level, BasicMap.state.maxLevel),
+                0
+            );
+            console.log('setLevel: ', nLv);
+            if(nLv !== BasicMap.state.level) {
+                BasicMap.state.level = nLv;
+                BasicMap.startZone();
+            }
+        }
+
+        static switchForward() {
+            BasicMap.state.isForward = !BasicMap.state.isForward;
+        }
+
+        static startZone() {
+            BasicMap.state.cell = 0;
+        }
+
+        static finishZone() {
+            BasicMap.state.zonesAmounts[BasicMap.state.level] = (BasicMap.state.zonesAmounts[BasicMap.state.level] || 0) + 1;
+            if(BasicMap.state.isForward) {
+                BasicMap.state.level++;
+            }
+            BasicMap.state.maxLevel = Math.max(BasicMap.state.level, BasicMap.state.maxLevel);
+            BasicMap.startZone();
+        }
+
+        static process(dT) {
+            const qt = CreatureJobs.getWorkerAmount('fighter');
+
+            if(qt <= 0) {
+                BasicMap.state.isTurnedOn = false;
+            }
+            if(BasicMap.state.isTurnedOn) {
+                if(!BasicFight.isInProgress) {
+                    // start fight
+                    BasicFight.start(BasicMap.state.level, BasicMap.state.cell);
+                }
+                BasicFight.process(dT);
+                if(BasicFight.isWon) {
+                    BasicFight.isInProgress = false;
+                    BasicResources.add('souls', (BasicMap.state.level+1) + 0.02 *  BasicMap.state.cell);
+                    BasicMap.state.cell++;
+                    if(BasicMap.state.cell > 100) {
+                        BasicMap.finishZone();
+                    }
+                }
+                if(BasicFight.isLost) {
+                    BasicMap.startZone();
+                }
+            }
+        }
+
+        static sendToUI() {
+            if(!BasicMap.state.level) {
+                BasicMap.state.level = 0;
+            }
+            ColibriWorker.sendToClient('set_map_state', {
+                ...BasicMap.state,
+                isFightAvailable: CreatureJobs.getWorkerAmount('fighter') > 0
+            });
+        }
 
     }
 
@@ -724,6 +1359,15 @@
         maxLevel: 0,
         getCost: (level) => ({
             research: 10000*Math.pow(3, level),
+        }),
+    },{
+        id: 'building',
+        name: 'Building',
+        description: 'Unlocks building. Each level increase builder effiency by 20%',
+        isUnlocked: () => BasicResearch.getTotal('fighting') > 0 && BasicMap.state.zonesAmounts[0] > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 500000*Math.pow(3, level),
         }),
     }];
 
@@ -1336,7 +1980,7 @@
         text: [
             `You definitely much and much stronger. Each next research/run will go easier and easier. Keep unlock new researches.`,
         ],
-        note: 'At this point story itself ends for now. Still working on more stuff.',
+        note: 'Some of researches can be unlocked by 2-3 levels of previous ones.',
         requirements: [{
             type: 'research',
             id: 'necromancery',
@@ -1347,106 +1991,79 @@
             amount: 3,
         }],
         requirementDesc: 'Have at least 3 levels of Necromancery and Spellmaster.',
+    },{
+        id: 'toTheWar',
+        name: 'The Holy War',
+        text: [
+            `Another frosty morning. As usual, you walked through the forest back to settlement, enjoying the fresh inter air and shining sun.
+        Suddenly, you recognized the same old mirror with familiar face into it.`,
+            `Dulequar: - Well, you don't look like the weak and confused man I first saw at the ranch. I feel you are ready for 
+        the trial that your destiny prepared for you.`,
+            `You: - Well, another adventure? Sounds sweet!`,
+            `Dulequar: - Trust me, that's not sweet at all. Give me your hand`,
+            `You squeezed Dulequar's hand, and started feeling strange vibrations. Everything darkened for a few moments. After
+        you opened your eyes you realized yourself in ruined city. Everything is burning. You hear a lot of people screaming
+         around.`,
+            `Dulequar: - Overthere!`,
+            `You see a horde of living skeletons approaching you. Dulequar spelled something similar to summoning spell. A mighty 
+        ogre of tremendous size in shinning armor appeared. He raised his mace and smashed skeletons approaching you.`,
+            `Dulequar: - Watch your back!!!`,
+            `A sword pierced your body. You felt over. Everything darkened. That's the end...`,
+            `You started thinkin: -No, it can't be the end. I can not just die!`,
+            `You recognized your self laying in the forest next to the mirror`,
+            `Dulequar: - Well, to be honest, I didn't expected you to survive. But I had to show you this.`,
+            `You: - What just happened? Where I was? Who are these armies of living skeletons?`,
+            `Dulequar: - Well, that's Azragard and his minions.`,
+            `You: - Who is Azragard? Why would he try to demolish whole city?`,
+            `Dulequar: - Not whole city, but whole world actually. He tries to turn all of us in his slaves. Kill us and enslave our souls.`,
+            `You: - Sounds like great plot of the fantasy film.`,
+            `Dulequar: - But that's tre truth. Anyway, you should start getting prepared to our Holy war. We can't afford defeat. Take this.`,
+            `Dulequar gave you some scroll and disappeared. Well, another adventure ends up with some weird book or scroll you need to learn. 
+        You unfolded the scroll and read spell written on it out loud. But nothing happened. Well, maybe you should make your researchers
+         to focus on investigating it.`
+        ],
+        note: '',
+        requirements: [{
+            type: 'research',
+            id: 'fighting',
+            amount: 1,
+        },{
+            type: 'zoneCleared',
+            id: '1',
+            amount: 1,
+        }],
+        requirementDesc: 'Research fighting. Clear out second zone at least once.',
+    },{
+        id: 'toTheWar',
+        name: 'The Holy War',
+        text: [
+            `Another squad of weird skeletons crashed like toys.`,
+            `You: - Good job, guys!`,
+            `Your warrior creatures glanced at you blankly. You almost believed they actually understand when you talking to them.`,
+            `You was about to portal back to you room in basement when you felt someones hand on your shoulder.`,
+            `Dulequar: - Follow me. I have to show you something.`,
+            `You: - Let's hope I won't die this time`,
+            `Dulequar smiled and stretched his hand. Another weird traveling. You opened you eyes and recognized yourself surrounded 
+        by gorgeous palaces and temples. Hundreds of troles, ogres and other strange creatures around doing their business.`,
+            `Some of them were carrying some goods, some of them just walking enjoying great looks`,
+            `You: So, where we are?`,
+            `Dulequar: - Well, it's my tiny estate.`,
+            `You: Tiny estate?! It looks like something... It's amazing!`,
+            `Dulequar: - Once upon a time you will have even better.`,
+            `You: - Me?`,
+            `Dulequar: - You can't leave in magic shop basements forever. You proved yourself in many battles. Each peace of land 
+        cleared out from Azragard troops becomes yours. So, you can use it to make yourself even stronger and better prepared 
+        for our Holy war. Let's don't waste too much time here.`,
+            `After returning back to your basement, Dulequar gave you another scroll. Well, you feel you know what to do!`,
+        ],
+        note: 'At this point story ends for now. To be developed in future...',
+        requirements: [{
+            type: 'research',
+            id: 'building',
+            amount: 1,
+        }],
+        requirementDesc: 'Research building.',
     }];
-
-    class CreatureJobs {
-
-        static workers = {};
-
-        static getFreeWorkers() {
-            let free = CreatureBasic.numCreatures;
-            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
-                const workersPerJob = Math.min(free, state.current);
-                CreatureJobs.workers[jobId].current = workersPerJob;
-                free -= workersPerJob;
-            });
-            return free;
-        }
-
-        static getWorkerAmount(id) {
-            return CreatureJobs.workers[id]?.current || 0;
-        }
-
-        static updateWorkers({ id, amount }) {
-            let free = CreatureJobs.getFreeWorkers();
-            if(amount > free) {
-                amount = free;
-            }
-            if(amount < 0) {
-                amount = Math.max(amount, -1 * (CreatureJobs.workers[id]?.current || 0));
-            }
-            if(!CreatureJobs.workers[id]) {
-                CreatureJobs.workers[id] = {
-                    current: 0,
-                };
-            }
-            CreatureJobs.workers[id].current += amount;
-        }
-
-        static getList() {
-            const free = CreatureJobs.getFreeWorkers();
-            const jobs = jobsData.map(one => {
-
-                return {
-                    id: one.id,
-                    name: one.name,
-                    gain: one.getGain(1),
-                    cost: one.getCost(1),
-                    current: CreatureJobs.workers[one.id]?.current || 0,
-                }
-            });
-            return {
-                free,
-                jobs
-            }
-        }
-
-        static getBalanceById(resourceId) {
-            let bal = 0;
-            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
-                const jobData = jobsData.find(one => one.id === jobId);
-                const gain = jobData.getGain(state.current);
-                const cost = jobData.getCost(state.current);
-                if(gain && gain[resourceId]) {
-                    bal += gain[resourceId];
-                }
-                if(cost && cost[resourceId]) {
-                    bal -= cost[resourceId];
-                }
-            });
-            return bal;
-        }
-
-        static process(dT) {
-            CreatureJobs.getFreeWorkers();
-            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
-                const jobData = jobsData.find(one => one.id === jobId);
-                const potCost = jobData.getCost(state.current);
-                const hasEnough = BasicResources.checkResourcesAvailable(potCost);
-                if(hasEnough.totalPercentage < dT) { // won't be able to afford, skip
-                    CreatureJobs.workers[jobId].skip = true;
-                    if(jobData.isUnstable) {
-                        CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
-                        CreatureBasic.numCreatures--;
-                    }
-                } else {
-                    CreatureJobs.workers[jobId].skip = false;
-                    CreatureJobs.workers[jobId].prodThisTick = BasicResources.multBatch(jobData.getGain(state.current), dT);
-                    CreatureJobs.workers[jobId].consThisTick = BasicResources.multBatch(jobData.getCost(state.current), dT);
-
-                    BasicResources.addBatch(CreatureJobs.workers[jobId].prodThisTick);
-                    BasicResources.subtractBatch(CreatureJobs.workers[jobId].consThisTick);
-                }
-
-            });
-        }
-
-        static sendToUI() {
-            const info = CreatureJobs.getList();
-            ColibriWorker.sendToClient('set_creatures_jobs_state', info);
-        }
-
-    }
 
     class BasicStory {
 
@@ -1507,6 +2124,10 @@
                     return BasicBanners.hasAllBannerTypes(req.id);
                 case 'research':
                     return BasicResearch.getResearchLevel(req.id) >= req.amount;
+                case 'zoneCleared':
+                    return BasicMap.state.zonesAmounts[+req.id] >= req.amount;
+                case 'building':
+                    return BasicBuilding.getBuildingLevel(req.id) >= req.amount;
                 default:
                     console.error(`Invalid story requirement: `, req);
             }
@@ -1544,74 +2165,6 @@
 
     }
 
-    const fmtVal = (val) => {
-        if(val == null) return null;
-        if(!val) return 0;
-        const sign = Math.sign(val);
-        const abs = Math.abs(val);
-        const orders = Math.log10(abs);
-        if(orders < 0) {
-            return `${sign < 0 ? '-' : ''}${abs.toFixed(2)}`;
-        }
-        const suffixId = Math.floor(orders / 3);
-        const mpart = (abs / (Math.pow(1000, suffixId))).toFixed(2);
-        let suffix = '';
-        switch (suffixId) {
-            case 1:
-                suffix = 'K';
-                break;
-            case 2:
-                suffix = 'M';
-                break;
-            case 3:
-                suffix = 'B';
-                break;
-            case 4:
-                suffix = 'T';
-                break;
-            case 5:
-                suffix = 'Qa';
-                break;
-            case 6:
-                suffix = 'Qi';
-                break;
-            case 7:
-                suffix = 'Sx';
-                break;
-            case 8:
-                suffix = 'Sp';
-                break;
-            case 9:
-                suffix = 'Oc';
-                break;
-            case 10:
-                suffix = 'No';
-                break;
-            case 11:
-                suffix = 'Dc';
-                break;
-        }
-        return `${sign < 0 ? '-' : ''}${mpart}${suffix}`;
-    };
-
-    const getSpellMultiplier = () => {
-        return BasicBanners.getBonus('green')
-            * (1 + 0.25 * BasicResearch.getResearchLevel('spellMaster'))
-            * (1 + 0.25*(ShopItems.purchased.magicStamp ? 1 : 0))
-            * (1 + 0.5*(ShopItems.purchased.appretienceManual ? 1 : 0))
-            * (1 + 0.5*(ShopItems.purchased.advancedMagic ? 1 : 0))
-            * Math.pow(1.01, BasicSkills.skillLevel('magic'))
-    };
-
-
-    const getExpansionEffect = () => {
-        return 5 * getSpellMultiplier();
-    };
-
-    const getEnergyOrbEffect = () => {
-        return 2 * getSpellMultiplier();
-    };
-
     const actionsData = [{
         id: 'work',
         name: 'Work at stable',
@@ -1624,7 +2177,8 @@
             gold: ((1 + (ShopItems.purchased.manual ? 1 : 0) + (ShopItems.purchased.shovel ? 2 : 0)
                 + (ShopItems.purchased.bargaging ? 2 : 0))
                 * Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
-            ) * BasicBanners.getBonus('green'),
+                * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
+            ) * getResourceMult('gold') * BasicBanners.getBonus('green'),
         }),
         getCooldown: () =>  Math.pow(0.99, BasicSkills.skillLevel('initiative')),
     },{
@@ -1710,7 +2264,7 @@
                 * Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
                 * (1 + 0.1 * BasicResearch.getResearchLevel('soulEater'))
                 * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
-            ) * BasicBanners.getBonus('green'),
+            ) * BasicBanners.getBonus('green') * getResourceMult('souls'),
         }),
         getCooldown: () => 5 * Math.pow(0.99, BasicSkills.skillLevel('initiative')),
     },{
@@ -1914,9 +2468,11 @@
         id: 'gold',
         name: 'Gold',
         isUnlocked: () => true,
-        getMax: () => 20 + 20 * (ShopItems.purchased.pocket || 0)
+        getMax: () => (20 + 20 * (ShopItems.purchased.pocket || 0)
             + getExpansionEffect()* (BasicActions.actions.expansionSpell?.performed || 0)
-            + 200 * (ShopItems.purchased.stash || 0),
+            + 200 * (ShopItems.purchased.stash || 0)) * (
+                1 + 0.1 * BasicBuilding.getBuildingLevel('palace')
+        ),
         getIncome: () => 0,
         getAggregatedIncome: () => {
         }
@@ -1936,7 +2492,9 @@
         name: 'Mana',
         isUnlocked: () => !!ShopItems.purchased.bookOfMagic,
         getMax: () => 10 + 10 * (ShopItems.purchased.magicStamp || 0)
-            + 4*(BasicActions.actions.magicLessons?.performed || 0) * BasicBanners.getBonus('green'),
+            + 4*(BasicActions.actions.magicLessons?.performed || 0)
+            * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
+            * BasicBanners.getBonus('green'),
         getIncome: () => 0,
     },{
         id: 'souls',
@@ -1961,6 +2519,24 @@
         name: 'Research',
         isUnlocked: () => BasicResearch.isResearchUnlocked(),
         getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'territory',
+        name: 'Territory',
+        isUnlocked: () => BasicMap.state.zonesAmounts[0] > 0,
+        getMax: () => Object.values(BasicMap.state.zonesAmounts).reduce((acc, one, index) => acc + 0.01*one*Math.pow(1.5, index), 0),
+        getIncome: () => 0,
+    },{
+        id: 'wood',
+        name: 'Wood',
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse'),
+        getIncome: () => 0,
+    },{
+        id: 'stone',
+        name: 'Stone',
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse'),
         getIncome: () => 0,
     }];
 
@@ -2069,7 +2645,7 @@
 
         static sendToUI() {
             ColibriWorker.sendToClient('update_resources', resourcesData.map(one => {
-                const amount = BasicResources.resources[one.id] || 0;
+                let amount = BasicResources.resources[one.id] || 0;
                 let income = 0;
                 let incomeText = 0;
                 if(one.id === 'flasks') {
@@ -2078,6 +2654,9 @@
                 } else {
                     income = BasicResources.getBalance(one);
                     incomeText = fmtVal(income);
+                }
+                if(one.id === 'territory') {
+                    amount = BasicBuilding.getUsedTerritoryCached() || 0;
                 }
                 return {
                     name: one.name,
@@ -2089,188 +2668,6 @@
                     amount
                 }
             }));
-        }
-
-    }
-
-    class FightParties {
-
-        static generateMy() {
-            const hpBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
-            const dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
-            const qt = CreatureJobs.getWorkerAmount('fighter');
-            return {
-                name: 'Warriors',
-                damage: 2 * dmgBonus,
-                maxHP: 5 * hpBonus,
-                defense: 0,
-                quantity: qt,
-            }
-        }
-
-        static generateEnemy(level, cell) {
-            return {
-                quantity: Math.round(3 + Math.random()*2),
-                damage: 0.5*Math.pow(1.5, level + cell/100),
-                maxHP: 2 * Math.pow(1.5, level + cell/100),
-                defense: 0,
-                name: 'Enemy Mock'
-            }
-        }
-
-    }
-
-    class BasicFight {
-
-        static parties = {};
-
-        static isInProgress = false;
-
-        static isLost = false;
-
-        static isWon = false;
-
-        static atckCooldown = 2;
-
-        static initialize() {
-            BasicFight.parties = {};
-            BasicFight.isInProgress = false;
-        }
-
-        static start(level, cell) {
-            BasicFight.atckCooldown = 2;
-            BasicFight.isInProgress = true;
-            BasicFight.isLost = false;
-            BasicFight.isWon = false;
-            BasicFight.parties = {
-                me: BasicFight.prepareToFight(FightParties.generateMy()),
-                enemy: BasicFight.prepareToFight(FightParties.generateEnemy(level, cell)),
-            };
-
-        }
-
-        static prepareToFight(side) {
-            return {
-                ...side,
-                realHP: side.maxHP * side.quantity,
-                maxRealHP: side.maxHP * side.quantity,
-            }
-        }
-
-        static process(dT) {
-            // check if fight was end
-            if(!BasicFight.isInProgress) return;
-            if(!BasicFight.parties.me || !BasicFight.parties.enemy) return;
-
-            if(BasicFight.parties.me.realHP <= 0) {
-                BasicFight.isLost = true;
-                BasicFight.isInProgress = false;
-                return;
-            }
-            if(BasicFight.parties.enemy.realHP <= 0) {
-                BasicFight.isWon = true;
-                BasicFight.isInProgress = false;
-                return;
-            }
-
-            BasicFight.atckCooldown -= dT;
-
-            if(BasicFight.atckCooldown <= 0) {
-                BasicFight.atckCooldown = 2;
-
-                // attacking
-                BasicFight.parties.me.realHP -= Math.max(0, BasicFight.parties.enemy.damage - BasicFight.parties.me.defense)
-                    * BasicFight.parties.enemy.quantity;
-
-                BasicFight.parties.me.quantity = Math.ceil(BasicFight.parties.me.realHP / BasicFight.parties.me.maxHP);
-
-                // defending
-                BasicFight.parties.enemy.realHP -= Math.max(0, BasicFight.parties.me.damage - BasicFight.parties.enemy.defense)
-                    * BasicFight.parties.me.quantity;
-
-                BasicFight.parties.enemy.quantity = Math.ceil(BasicFight.parties.enemy.realHP / BasicFight.parties.enemy.maxHP);
-
-            }
-        }
-
-        static sendToUI() {
-            ColibriWorker.sendToClient('set_battle_state', {
-                parties: BasicFight.parties,
-                isInProgress: BasicFight.isInProgress,
-            });
-        }
-
-    }
-
-    class BasicMap {
-
-        static state = {
-            level: 0,
-            cell: 0,
-            isForward: true,
-            isTurnedOn: false,
-            zonesAmounts: {},
-        }
-
-        static initialize() {
-            BasicMap.state = {
-                level: 0,
-                cell: 0,
-                isForward: true,
-                isTurnedOn: false,
-                zonesAmounts: {},
-            };
-            return BasicMap.state;
-        }
-
-        static switchTurned() {
-            BasicMap.state.isTurnedOn = !BasicMap.state.isTurnedOn;
-        }
-
-        static switchForward() {
-            BasicMap.state.isForward = !BasicMap.state.isForward;
-        }
-
-        static startZone() {
-            BasicMap.state.cell = 0;
-        }
-
-        static finishZone() {
-            BasicMap.state.zonesAmounts[BasicMap.state.level] = (BasicMap.state.zonesAmounts[BasicMap.state.level] || 0) + 1;
-            if(BasicMap.state.isForward) {
-                BasicMap.state.level++;
-            }
-            BasicMap.startZone();
-        }
-
-        static process(dT) {
-            const qt = CreatureJobs.getWorkerAmount('fighter');
-
-            if(qt <= 0) {
-                BasicMap.state.isTurnedOn = false;
-            }
-            if(BasicMap.state.isTurnedOn) {
-                if(!BasicFight.isInProgress) {
-                    // start fight
-                    BasicFight.start(BasicMap.state.level, BasicMap.state.cell);
-                }
-                BasicFight.process(dT);
-                if(BasicFight.isWon) {
-                    BasicFight.isInProgress = false;
-                    BasicResources.add('souls', (BasicMap.state.level+1) + 0.02 *  BasicMap.state.cell);
-                    BasicMap.state.cell++;
-                    if(BasicMap.state.cell > 100) {
-                        BasicMap.finishZone();
-                    }
-                }
-                if(BasicFight.isLost) {
-                    BasicMap.startZone();
-                }
-            }
-        }
-
-        static sendToUI() {
-            ColibriWorker.sendToClient('set_map_state', BasicMap.state);
         }
 
     }
@@ -2291,6 +2688,7 @@
             CreatureBasic.initialize();
             BasicMap.initialize();
             BasicFight.initialize();
+            BasicBuilding.initialize();
             // add potential purchased researches to actual ones
             BasicResearch.onPrestige();
 
@@ -2310,12 +2708,14 @@
             BasicStory.process();
             BasicFight.process(dT);
             BasicMap.process(dT);
+            BasicBuilding.process(dT);
             BasicRun.timeSpent += dT;
             ColibriWorker.sendToClient('set_general', {
                 timeSpent: BasicRun.timeSpent,
                 bannersUnlocked: CreatureBasic.numCreatures > 50 || BasicBanners.hasSomeBanners(),
                 researchUnlocked: BasicResearch.isResearchUnlocked(),
                 battleUnlocked: BasicResearch.getResearchLevel('fighting') > 0,
+                buildingUnlocked: BasicResearch.getResearchLevel('building') > 0,
                 story: BasicStory.getCurrentToShow(),
             });
         }
@@ -2350,6 +2750,7 @@
                 researches: BasicResearch.researches || {},
                 story: BasicStory.story || {},
                 map: BasicMap.state || {},
+                buildings: BasicBuilding.buildings || {},
             };
             console.log('saving: ', saveObject);
             return JSON.stringify(saveObject);
@@ -2357,6 +2758,7 @@
 
         static saveStringToGame(saveString) {
             const save = JSON.parse(saveString);
+            BasicBuilding.usedLand = null;
             BasicResources.resources = save.resources;
             BasicActions.actions = save.actions;
             ShopItems.purchased = save.shopItems;
@@ -2371,6 +2773,7 @@
             BasicResearch.researches = save.researches || {};
             BasicStory.story = save.story || BasicStory.initialize();
             BasicMap.state = save.map || BasicMap.initialize();
+            BasicBuilding.buildings = save.buildings || BasicBuilding.initialize();
         }
 
         static save() {
@@ -2448,6 +2851,10 @@
         BasicStory.sendToUI();
     });
 
+    ColibriWorker.on('get_buildings_tab', () => {
+        BasicBuilding.sendToUI();
+    });
+
     ColibriWorker.on('do_action', (id) => {
         BasicActions.performAction(id);
     });
@@ -2504,6 +2911,10 @@
         BasicMap.switchForward();
     });
 
+    ColibriWorker.on('set_battle_level', ({ level }) => {
+        BasicMap.setLevel(level);
+    });
+
     ColibriWorker.on('set_amount', ({ amount }) => {
         CreatureBasic.setAmount(amount);
     });
@@ -2515,6 +2926,10 @@
 
     ColibriWorker.on('import_game', (data) => {
         Main.importGame(data);
+    });
+
+    ColibriWorker.on('do_build', ({ id }) => {
+        BasicBuilding.startBuilding(id);
     });
 
 }));
