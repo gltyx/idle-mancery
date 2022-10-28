@@ -73,7 +73,7 @@
         });
 
         if (attrs?.debug) {
-          console.warn('DEBUG: ', elem, attrs, children);
+          console.warn('DEBUG: ', elem, attrs, JSON.stringify(children));
         }
 
         if (!children) return elem;
@@ -197,6 +197,7 @@
           logInterval: 10000,
           rerenderInterval: 50,
           debugVirtualDom: false,
+          pauseRender: false,
           ...config
         };
       }
@@ -279,6 +280,10 @@
         for (const key in prev) {
           if (!prev.hasOwnProperty(key)) {
             continue;
+          }
+
+          if (!(key in current)) {
+            return true;
           }
 
           if (typeof prev[key] === 'object') {
@@ -457,6 +462,12 @@
             parent.hasChildComponents = true;
           }
         }
+        /*if(DOMNode.name === 'BuildingsComponent') {
+            console.log('DOMNode: ', DOMNode, JSON.stringify(DOMNode, ' ', 2));
+            console.log('prevDOMNode: ', prevDOMNode);
+            console.log('parent: ', parent);
+        }*/
+
 
         if (UpdateChecker.checkAbortNode(DOMNode, prevDOMNode, parent)) {
           return true;
@@ -494,6 +505,12 @@
             DOMNode.shouldUpdate = UpdateChecker.defaultShouldUpdate(prevDOMNode.attributes, DOMNode.attributes);
           }
         }
+        /*if(DOMNode.name === 'BuildingsComponent') {
+            console.log('DOMNode: ', DOMNode?.attributes);
+            console.log('prevDOMNode: ', prevDOMNode?.attributes);
+            console.log('isEq: ', UpdateChecker.defaultShouldUpdate(prevDOMNode.attributes, DOMNode.attributes));
+        }*/
+
 
         const checkListeners = DOMNode?.listeners || prevDOMNode?.listeners; // thid part takes too much
 
@@ -565,6 +582,8 @@
 
     class RealDom {
       static monitors = {};
+      static isReRendering = false;
+      static preventRender = false;
 
       static renderHTML(DOMNode, parent, parentDOM) {
         // console.log('rendering', DOMNode, parent);
@@ -667,9 +686,7 @@
             // console.log('update listeners', DOMNode.ref);
             const monId = DOMNode.attributes?.['monitorId'];
             Object.entries(DOMNode.listeners).forEach(([key, value]) => {
-              if (value.prealCb !== value.realCb) {
-                console.warn('WARN! CB was changed on item ', DOMNode.ref);
-              }
+              if (value.prealCb !== value.realCb) ;
 
               if (value.shouldUpdateListener) {
                 const ev = key.toLowerCase().substr(2);
@@ -710,6 +727,15 @@
 
       static renderDOM(func, id) {
         //const start = performance.now();
+        if (RealDom.isReRendering) {
+          console.warn('Skip re-render UI');
+        }
+
+        if (RealDom.preventRender) {
+          return;
+        }
+
+        RealDom.isReRendering = true;
         const newDom = func(); // console.log('newDom: ', newDom);
         //const runned = performance.now();
         // console.log('compare: ', JSON.stringify(VirtualDOM.DOMNodes, ' ', 1), JSON.stringify(newDom, ' ', 1));
@@ -728,7 +754,14 @@
         // - double check if properly working with DOM
 
 
-        RealDom.renderHTML(VirtualDOM.DOMNodes, document.getElementById(id)); // console.log('afterRender: ', JSON.stringify(VirtualDOM.DOMNodes, ' ', 1));
+        RealDom.renderHTML(VirtualDOM.DOMNodes, document.getElementById(id));
+        RealDom.isReRendering = false;
+
+        if (Config.configs.pauseRender) {
+          Config.configs.pauseRender--;
+        }
+
+        RealDom.preventRender = Config.configs.pauseRender === 0; // console.log('afterRender: ', JSON.stringify(VirtualDOM.DOMNodes, ' ', 1));
         //const end = performance.now();
 
         /*Monitor.addValue('parseTime', runned - start);
@@ -1116,7 +1149,7 @@
       });
     };
 
-    var css_248z$c = ".sidebar {\n    margin-right: 20px;\n    background: #000000;\n    padding: 15px;\n    width: 290px;\n    flex-shrink: 0;\n    min-height: calc(100vh - 180px);\n}\n\n.sidebar .resourceName {\n    width: 80px;\n    display: inline-block;\n}\n\n.resource-line {\n    display: flex;\n}\n\n.resource-line .income {\n    font-size: 12px;\n    margin-left: 5px;\n}\n\n.resource-line .income.positive {\n    color: #53a862;\n}\n\n.resource-line .income.negative {\n    color: #ad2121;\n}";
+    var css_248z$c = ".sidebar {\r\n    margin-right: 15px;\r\n    background: #000000;\r\n    padding: 15px;\r\n    width: 290px;\r\n    flex-shrink: 0;\r\n    min-height: calc(100vh - 180px);\r\n}\r\n\r\n.sidebar .resourceName {\r\n    width: 80px;\r\n    display: inline-block;\r\n}\r\n\r\n.resource-line {\r\n    display: flex;\r\n}\r\n\r\n.resource-line .income {\r\n    font-size: 12px;\r\n    margin-left: 5px;\r\n}\r\n\r\n.resource-line .income.positive {\r\n    color: #53a862;\r\n}\r\n\r\n.resource-line .income.negative {\r\n    color: #ad2121;\r\n}";
     styleInject(css_248z$c);
 
     const Tooltip = ({
@@ -1299,7 +1332,7 @@
       }));
     };
 
-    var css_248z$9 = "\n.shop-settings {\n    margin: 5px;\n    padding: 10px;\n    background: #030304;\n    display: flex;\n}\n\n.shop-items {\n    display: flex;\n    flex-wrap: wrap;\n    justify-content: flex-start;\n}\n\n.shop-item-wrapper {\n    width: 260px;\n    text-align: center;\n    margin: 5px;\n    padding: 10px;\n    background: #030304;\n}\n\n.shop-item-wrapper button {\n    margin: auto;\n    width: 140px;\n}\n\n.item-resources {\n    padding-left: 50px;\n}";
+    var css_248z$9 = "\r\n.shop-settings {\r\n    margin: 5px;\r\n    padding: 10px;\r\n    background: #030304;\r\n    display: flex;\r\n}\r\n\r\n.shop-items {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.shop-item-wrapper {\r\n    width: 260px;\r\n    text-align: center;\r\n    margin: 5px;\r\n    padding: 10px;\r\n    background: #030304;\r\n}\r\n\r\n.shop-item-wrapper button {\r\n    margin: auto;\r\n    width: 140px;\r\n}\r\n\r\n.item-resources {\r\n    padding-left: 50px;\r\n}";
     styleInject(css_248z$9);
 
     const makePurchase = id => {
@@ -1550,7 +1583,7 @@
       style: `border-left: 10px solid ${banner.color};`
     }, VirtualDOM.createVirtualElement("p", null, "Tier ", index), VirtualDOM.createVirtualElement("span", {
       className: 'amount'
-    }, tier.amount), VirtualDOM.createVirtualElement("p", null, (tier.effectCumulative * 100).toFixed(2), "%")), VirtualDOM.createVirtualElement("div", null, tier.canPrestige ? VirtualDOM.createVirtualElement("button", {
+    }, fmtVal(tier.amount)), VirtualDOM.createVirtualElement("p", null, (tier.effectCumulative * 100).toFixed(2), "%")), VirtualDOM.createVirtualElement("div", null, tier.canPrestige ? VirtualDOM.createVirtualElement("button", {
       className: 'main-action',
       onClick: useCiCallback(id => prestige(id), [banner.id])
     }, "Prestige (+", fmtVal(tier.maxConversion), ")") : null, tier.isConvertable ? VirtualDOM.createVirtualElement("button", {
@@ -1722,7 +1755,7 @@
       }));
     };
 
-    var css_248z$3 = "\n.settings-wrap {\n    background: #030304;\n    padding: 20px;\n}\n\n.sett-inner {\n    max-width: 500px;\n}\n\n#save-text {\n    width: 400px;\n    margin-bottom: 10px;\n    resize: none;\n    /*width: 0;\n    height: 0;\n    padding: 0;\n    margin: 0;\n    border: 0;*/\n}";
+    var css_248z$3 = "\r\n.settings-wrap {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.sett-inner {\r\n    max-width: 500px;\r\n}\r\n\r\n#save-text {\r\n    width: 400px;\r\n    margin-bottom: 10px;\r\n    resize: none;\r\n    /*width: 0;\r\n    height: 0;\r\n    padding: 0;\r\n    margin: 0;\r\n    border: 0;*/\r\n}";
     styleInject(css_248z$3);
 
     const saveToBuffer = () => {
@@ -1839,7 +1872,7 @@
       }));
     };
 
-    var css_248z$1 = ".buildings {\n    padding: 10px;\n    background: #030304;\n}\n\n.building-wrapper {\n    padding: 10px;\n}\n\n.build-wrap {\n    width: 150px;\n}\n\n.building-wrapper .description {\n    width: 400px;\n}";
+    var css_248z$1 = ".buildings {\r\n    padding: 10px;\r\n    background: #030304;\r\n}\r\n\r\n.building-wrapper {\r\n    padding: 10px;\r\n}\r\n\r\n.build-wrap {\r\n    width: 150px;\r\n}\r\n\r\n.building-wrapper .description {\r\n    width: 400px;\r\n}";
     styleInject(css_248z$1);
 
     const doBuild = id => {

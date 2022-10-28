@@ -1264,7 +1264,11 @@
                 BasicFight.process(dT);
                 if(BasicFight.isWon) {
                     BasicFight.isInProgress = false;
-                    BasicResources.add('souls', (BasicMap.state.level+1) + 0.02 *  BasicMap.state.cell);
+                    BasicResources.add('souls',
+                        Math.pow(1.3, (BasicMap.state.level+1) + 0.01 *  BasicMap.state.cell)
+                        * (1 + 0.1 * BasicResearch.getResearchLevel('soulEater'))
+                        * getResourceMult('souls')
+                    );
                     BasicMap.state.cell++;
                     if(BasicMap.state.cell > 100) {
                         BasicMap.finishZone();
@@ -1987,7 +1991,7 @@
             amount: 3,
         },{
             type: 'research',
-            id: 'spellmaster',
+            id: 'spellMaster',
             amount: 3,
         }],
         requirementDesc: 'Have at least 3 levels of Necromancery and Spellmaster.',
@@ -2136,6 +2140,7 @@
 
         static checkAll(reqs) {
             for(const req of reqs) {
+                // console.log('req: ', req, BasicStory.checkOne(req));
                 if(!BasicStory.checkOne(req)) {
                     return false;
                 }
