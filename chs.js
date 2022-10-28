@@ -377,7 +377,7 @@ var cnItems = {
     "Dulequar: - Well, that's Azragard and his minions.": "Dulequar： - 嗯，那是阿兹拉加德和他的手下。",
     "Dulequar: - Well, to be honest, I didn't expected you to survive. But I had to show you this.": "Dulequar： - 好吧，老实说，我没想到你能活下来。但我必须给你看这个。",
     "Dulequar: - Well, you don't look like the weak and confused man I first saw at the ranch. I feel you are ready for \n        the trial that your destiny prepared for you.": "Dulequar： - 嗯，你看起来不像我第一次在牧场看到的那个虚弱而困惑的人。我觉得你已经为你的命运为你准备的考验做好了准备。",
-    "Research building.": "研究大楼。",
+    "Research building.": "研究建造。",
     "Research fighting. Clear out second zone at least once.": "研究战斗。至少清除第二个区域一次。",
     "Some of them were carrying some goods, some of them just walking enjoying great looks": "他们中的一些人带着一些货物，一些人只是走路享受美丽的景色",
     "The Holy War": "圣战",
