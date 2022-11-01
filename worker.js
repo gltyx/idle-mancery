@@ -490,6 +490,111 @@
 
     }
 
+    class ObjectUtils {
+
+        static flattenObject(ob) {
+            if((typeof ob) !== 'object') return ob;
+            var toReturn = {};
+
+            for (var i in ob) {
+                if (!ob.hasOwnProperty(i)) continue;
+
+                if ((typeof ob[i]) == 'object' && ob[i] !== null) {
+                    var flatObject = flattenObject(ob[i]);
+                    for (var x in flatObject) {
+                        if (!flatObject.hasOwnProperty(x)) continue;
+
+                        toReturn[i + '.' + x] = flatObject[x];
+                    }
+                } else {
+                    toReturn[i] = ob[i];
+                }
+            }
+            return toReturn;
+        }
+
+        static setByPath(objRef, path, data) {
+            const pathParts = path.split('.');
+            let updatingPart = objRef;
+            if(!pathParts.length) {
+                objRef = data;
+                return objRef;
+            }
+            for(let i = 0; i < pathParts.length-1; i++) {
+                if(updatingPart[pathParts[i]]) {
+                    updatingPart = updatingPart[pathParts[i]];
+                } else {
+                    const nP = pathParts[i+1];
+                    if(Number.isInteger(+nP)) {
+                        updatingPart[pathParts[i]] = [];
+                    } else {
+                        updatingPart[pathParts[i]] = {};
+                    }
+                    updatingPart = updatingPart[pathParts[i]];
+                }
+            }
+            updatingPart[pathParts[pathParts.length-1]] = data;
+            return objRef;
+        }
+
+        static getByPath(objRef, path, def) {
+            const pathParts = path.split('.');
+            let updatingPart = objRef;
+            if(!pathParts.length) {
+                return objRef;
+            }
+            for(let i = 0; i < pathParts.length-1; i++) {
+                if(updatingPart[pathParts[i]]) {
+                    updatingPart = updatingPart[pathParts[i]];
+                } else {
+                    return def;
+                }
+            }
+            const val = updatingPart[pathParts[pathParts.length-1]];
+            return ((typeof val) === 'undefined') ? def : val;
+        }
+
+    }
+
+    class BasicSettings {
+
+        static settings = {};
+
+        static initialize(isBannerPrestige) {
+            if(!isBannerPrestige || !BasicSettings.settings) {
+                BasicSettings.settings = {
+                    inputControls: {
+                        creatureJobs: 'both',
+                    },
+                    notificationsSettings: {
+                        whenCreatureDies: true,
+                        whenBattleLost: true,
+                        whenBattleWon: false,
+                        whenBuildingBuilt: true,
+                        whenZoneFinished: true,
+                    },
+                    confirmationSettings: {
+                        whenGoNegative: true,
+                    },
+                    hotKeys: {
+
+                    }
+                };
+            }
+
+            return BasicSettings.settings;
+        }
+
+        static updateSetting(path, value) {
+            ObjectUtils.setByPath(BasicSettings.settings, path, value);
+        }
+
+        static sendToUI() {
+            ColibriWorker.sendToClient('set_settings_state', BasicSettings.settings);
+        }
+
+    }
+
     class CreatureJobs {
 
         static workers = {};
@@ -521,7 +626,7 @@
             return CreatureJobs.workers[id]?.skip || false;
         }
 
-        static updateWorkers({ id, amount }) {
+        static updateWorkers({ id, amount, isConfirmed }) {
             let free = CreatureJobs.getFreeWorkers();
             if(amount > free) {
                 amount = free;
@@ -533,6 +638,39 @@
                 CreatureJobs.workers[id] = {
                     current: 0,
                 };
+            }
+            const bStats = BasicResources.getBalanceDifferences({
+                creatureJobs: {
+                    ...CreatureJobs.workers,
+                    [id]: {current: CreatureJobs.workers[id].current + amount},
+                }
+            }, amount);
+            console.log('getRisk: ', bStats);
+            if(!isConfirmed && bStats.isRisk && BasicSettings.settings.confirmationSettings?.whenGoNegative) {
+                ColibriWorker.sendToClient('spawn_confirm', {
+                    text: `Your changes can cause your ${bStats.riskResources.map(({ name }) => name).join(', ')} balance go negative. Are you sure?`,
+                    onConfirmAction: {
+                        type: 'change_workers',
+                        payload: {
+                            id,
+                            amount,
+                            isConfirmed: true,
+                        }
+                    },
+                    onCancelAction: {
+                        type: 'change_workers',
+                        payload: {
+                            id,
+                            amount: bStats.optimum,
+                            isConfirmed: true,
+                        }
+                    },
+                    buttons: {
+                        confirm: `Update worker amount`,
+                        cancel: `Update to safe amount`
+                    }
+                });
+                return;
             }
             CreatureJobs.workers[id].current += amount;
         }
@@ -558,9 +696,12 @@
             }
         }
 
-        static getBalanceById(resourceId) {
+        static getBalanceById(resourceId, updatedWorkers = null) {
             let bal = 0;
-            Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
+            if(!updatedWorkers) {
+                updatedWorkers = CreatureJobs.workers;
+            }
+            Object.entries(updatedWorkers).forEach(([jobId, state]) => {
                 const jobData = jobsData.find(one => one.id === jobId);
                 const gain = jobData.getGain(state.current);
                 const cost = jobData.getCost(state.current);
@@ -608,7 +749,7 @@
     const buildingData = [{
         id: 'palace',
         name: 'Palace',
-        description: 'Each level increase gold maximum and gold income by 10%',
+        description: 'Each level increase gold maximum and gold income by 10%. At level 4 new building is opened',
         getConstructionAmount: (level) => 1000 * Math.pow(2, level),
         getTerritoryAmount: (level) => 0.2 * Math.pow(2, level) * buildingCostModifier('territory'),
         isUnlocked: () => true,
@@ -672,6 +813,17 @@
             gold: 1.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
             wood: 40 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
+        })
+    }, {
+        id: 'monument',
+        name: 'Monument of Yourself',
+        description: 'Each level increase banners gain on prestige by 10%',
+        getConstructionAmount: (level) => 4000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0.2 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicBuilding.getBuildingLevel('palace') > 3,
+        getCost: (level) => ({
+            gold: 1.e+5 * Math.pow(2, level) * buildingCostModifier('gold'),
+            stone: 100 * Math.pow(2, level),
         })
     }];
 
@@ -877,6 +1029,11 @@
                         BasicBuilding.buildings[key].isPurchased = false;
                         BasicBuilding.buildings[key].inProgress = false;
                         BasicBuilding.buildings[key].buildingProgress = 0;
+                        if(BasicSettings.settings.notificationsSettings.whenBuildingBuilt) {
+                            ColibriWorker.sendToClient('spawn_notification', {
+                                message: `You finished building ${one.name}.`
+                            });
+                        }
                     }
                 }
             }
@@ -1007,7 +1164,9 @@
             if(BasicTemper.getCurrentTemper() === 'saving') {
                 mlt = 1.2;
             }
-            return mlt * (1 + 0.1 * BasicBuilding.getBuildingLevel('palace'));
+            return mlt * (1 + 0.1 * BasicBuilding.getBuildingLevel('palace')) * (
+                1 + 0.1 * BasicBuilding.getBuildingLevel('bank')
+            );
         }
         if(id === 'energy') {
             let mlt = 1;
@@ -1045,7 +1204,10 @@
         return mlt;
     };
 
-    const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect();
+    const territotyPerZone = (index) => 0.01*Math.pow(1.5, index);
+
+    const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect()
+        * (1 + 0.2 * BasicResearch.getResearchLevel('motivation'));
 
     const jobsData = [{
         id: 'supporter',
@@ -1209,7 +1371,8 @@
         }
 
         static getConsumptionPerCreature() {
-            return (5 - (ShopItems.purchased.betterSummoning ? 0.5 : 0));
+            return (5 - (ShopItems.purchased.betterSummoning ? 0.5 : 0))
+                * (1 + 0.1 * BasicResearch.getResearchLevel('motivation'));
         }
 
         static getEnergyConsumption(add = 0) {
@@ -1254,24 +1417,26 @@
         }
 
         static setAmount(amount) {
+            if(amount > 10000) {
+                amount = 10000;
+            }
             CreatureBasic.settings.amount = Math.max(Math.round(amount), 1);
         }
 
         static process(dT) {
             BasicResources.subtract('energy', CreatureBasic.getEnergyConsumption()
                 * dT);
-            if(BasicResources.resources.energy <= 0) {
+            if(BasicResources.resources.energy <= 0 && CreatureBasic.numCreatures > 0) {
                 const loss = Math.max(1, Math.round(0.1*CreatureBasic.numCreatures));
                 CreatureBasic.numCreatures -= loss;
                 if(CreatureBasic.numCreatures < 0) {
                     CreatureBasic.numCreatures = 0;
                 }
-                ColibriWorker.sendToClient('spawn_notification', {
-                    message: `You lost ${loss} creatures due to lack of energy.`,
-                    color: '#da3842',
-                });
-                if(CreatureBasic.numCreatures <= 0) {
-                    CreatureBasic.numCreatures = 0;
+                if(BasicSettings.settings.notificationsSettings.whenCreatureDies) {
+                    ColibriWorker.sendToClient('spawn_notification', {
+                        message: `You lost ${loss} creatures due to lack of energy.`,
+                        color: '#da3842',
+                    });
                 }
                 BasicResources.resources.energy = 0;
             }
@@ -1287,11 +1452,16 @@
     class BasicBanners {
 
         static banners = {};
+        static prevBanners = {};
 
         static fillDefaultTiers() {
             return Array.from({length: 6}).map((one, index) => ({
                 amount: 0,
             }))
+        }
+
+        static getBannersOnPrestige = () => {
+            return CreatureBasic.numCreatures * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument'));
         }
 
         static initialize() {
@@ -1302,6 +1472,32 @@
                 green: BasicBanners.fillDefaultTiers()
             };
             return BasicBanners.banners;
+        }
+
+        static saveBannersToPrev() {
+            BasicBanners.prevBanners = {};
+            Object.entries(BasicBanners.banners).forEach(([key, tiers]) => {
+                BasicBanners.prevBanners[key] = [...tiers.map(one => ({...one}))];
+            });
+        }
+
+        static revert(id) {
+            if(BasicBanners.prevBanners[id]) {
+                BasicBanners.banners[id] = [...BasicBanners.prevBanners[id].map(one => ({...one}))];
+            }
+        }
+
+        static isChanged(id) {
+            if(!BasicBanners.prevBanners || !BasicBanners.prevBanners[id]) return false;
+            if(!BasicBanners.banners) return false;
+            if(!BasicBanners.banners[id]) return true;
+            for(let index of Array.from({ length: 6 }).keys()) {
+                if(BasicBanners.banners[id]?.[index]?.amount !== BasicBanners.prevBanners[id]?.[index]?.amount) {
+                    console.log('changed: ', id, index);
+                    return true;
+                }
+            }
+            return false;
         }
 
         static hasSomeBanners() {
@@ -1360,7 +1556,7 @@
                     if(!current) {
                         throw new Error(`Banners data was not loaded properly`)
                     }
-                    let maxConversion = tierIndex < 5 ? BasicBanners.banners[bannerInfo.id][4-tierIndex]?.amount / 5 : CreatureBasic.numCreatures;
+                    let maxConversion = tierIndex < 5 ? BasicBanners.banners[bannerInfo.id][4-tierIndex]?.amount / 5 : BasicBanners.getBannersOnPrestige();
                     let canPrestige = tierIndex === 5 && CreatureBasic.numCreatures >= 51;
                     let isConvertable = maxConversion >= 1 && tierIndex < 5;
                     if(!current.amount) {
@@ -1394,7 +1590,8 @@
                     name: bannerInfo.name,
                     description: bannerInfo.description,
                     color: bannerInfo.color,
-                    isUnlocked: bannerInfo.isUnlocked(), // for now
+                    isUnlocked: bannerInfo.isUnlocked(),
+                    isChanged: BasicBanners.isChanged(bannerInfo.id),
                     tiers,
                 }
             });
@@ -1405,11 +1602,12 @@
             if(CreatureBasic.numCreatures < 51) {
                 return;
             }
-            const amount = CreatureBasic.numCreatures;
+            const amount = BasicBanners.getBannersOnPrestige();
             if(!BasicBanners.banners[id]) {
                 BasicBanners.banners[id] = BasicBanners.fillDefaultTiers();
             }
             BasicBanners.banners[id][0].amount += amount;
+            BasicBanners.saveBannersToPrev();
             BasicRun.initialize(true);
             BasicTemper.state.currentId = 'select';
         }
@@ -1627,26 +1825,35 @@
                     const soulsGained = Math.pow(BasicMap.state.level+1, 0.5) * Math.pow(1.3, (BasicMap.state.level+1) + 0.01 *  BasicMap.state.cell)
                         * (1 + 0.1 * BasicResearch.getResearchLevel('soulEater'))
                         * getResourceMult('souls')
-                        * (1 + 0.25 * BasicResearch.getResearchLevel('combatLogistics'));
+                        * (1 + 0.25 * BasicResearch.getResearchLevel('looting'));
                     BasicResources.add('souls',
                         soulsGained
                     );
-                    console.log('spawn_notification');
-                    ColibriWorker.sendToClient('spawn_notification', {
-                        message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You recieved ${fmtVal(soulsGained)} souls.`
-                    });
+                    if(BasicSettings.settings.notificationsSettings.whenBattleWon) {
+                        // console.log('spawn_notification');
+                        ColibriWorker.sendToClient('spawn_notification', {
+                            message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You recieved ${fmtVal(soulsGained)} souls.`
+                        });
+                    }
                     BasicMap.state.cell++;
                     if(BasicMap.state.cell > 100) {
+                        if(BasicSettings.settings.notificationsSettings.whenZoneFinished) {
+                            ColibriWorker.sendToClient('spawn_notification', {
+                                message: `You finished map ${BasicMap.state.level}. You recieved ${fmtVal(territotyPerZone(BasicMap.state.level))} territory.`
+                            });
+                        }
                         BasicMap.finishZone();
                     }
                 }
                 if(BasicFight.isLost) {
                     console.log('you lost');
                     BasicFight.isInProgress = false;
-                    ColibriWorker.sendToClient('spawn_notification', {
-                        message: `You lost the battle at ${BasicMap.state.level}:${BasicMap.state.cell}.`,
-                        color: '#da3842',
-                    });
+                    if(BasicSettings.settings.notificationsSettings.whenBattleLost) {
+                        ColibriWorker.sendToClient('spawn_notification', {
+                            message: `You lost the battle at ${BasicMap.state.level}:${BasicMap.state.cell}.`,
+                            color: '#da3842',
+                        });
+                    }
                     BasicMap.startZone();
                 }
             }
@@ -1658,7 +1865,8 @@
             }
             ColibriWorker.sendToClient('set_map_state', {
                 ...BasicMap.state,
-                isFightAvailable: CreatureJobs.getWorkerAmount('fighter') > 0
+                isFightAvailable: CreatureJobs.getWorkerAmount('fighter') > 0,
+                territoryPerMap: territotyPerZone(BasicMap.state.level)
             });
         }
 
@@ -1815,7 +2023,7 @@
         id: 'looting',
         name: 'Looting',
         description: 'Increase fighting loot by 25%.',
-        isUnlocked: () => BasicResearch.getTotal('combatLogistics') > 1,
+        isUnlocked: () => BasicResearch.getTotal('combatLogistics') > 2,
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+8*Math.pow(3, level),
@@ -1828,6 +2036,15 @@
         maxLevel: 1,
         getCost: (level) => ({
             research: 50000000*Math.pow(10, level),
+        }),
+    },{
+        id: 'motivation',
+        name: 'Motivation',
+        description: 'Increase your creatures resources gain by 20% at cost of 10% more energy consumed.',
+        isUnlocked: () => BasicResearch.getTotal('tireless') > 9,
+        maxLevel: 10,
+        getCost: (level) => ({
+            research: 1.e+8*Math.pow(3, level),
         }),
     },{
         id: 'cityPlanning',
@@ -1886,6 +2103,7 @@
                 level: BasicResearch.getResearchLevel(one.id),
                 potential: BasicResearch.getResearchPlus(one.id),
                 max: one.maxLevel,
+                isMaxed: one.maxLevel && BasicResearch.getTotal(one.id) >= one.maxLevel,
                 isUnlocked: one.isUnlocked(),
                 cost: BasicResources.checkResourcesAvailable(one.getCost(BasicResearch.getTotal(one.id))),
                 isAvailable: BasicResources.checkResourcesAvailable(one.getCost(BasicResearch.getTotal(one.id))).isAvailable &&
@@ -2004,7 +2222,6 @@
         }
 
         static process = (dT) => {
-            console.log('processShop: ', ShopItems.settings.autoPurchase, ShopItems.settings.everPurchased);
             if(ShopItems.settings.autoPurchase) {
                 ShopItems.getAvailable().filter(one => !one.isPurchased && ShopItems.settings.everPurchased[one.id]).forEach(one => {
                     ShopItems.purchaseItem(one.id);
@@ -2497,8 +2714,8 @@
         }],
         requirementDesc: 'Research fighting. Clear out second zone at least once.',
     },{
-        id: 'toTheWar',
-        name: 'The Holy War',
+        id: 'building',
+        name: 'New home - new life',
         text: [
             `Another squad of weird skeletons crashed like toys.`,
             `You: - Good job, guys!`,
@@ -2672,7 +2889,7 @@
 
         }),
         getCustomGainText: () => {
-          return ` +${fmtVal((0.04 + (ShopItems.purchased.gymnastics ? 0.04 : 0))
+          return ` +${fmtVal((0.02 + (ShopItems.purchased.gymnastics ? 0.04 : 0) + (ShopItems.purchased.equipment ? 0.04 : 0))
            * BasicBanners.getBonus('green')
           * Math.pow(1.01, BasicSkills.skillLevel('perseverance')))} energy/sec`
         },
@@ -2966,6 +3183,8 @@
                 + 200 * (ShopItems.purchased.stash || 0)) * (
                 1 + 0.1 * BasicBuilding.getBuildingLevel('palace')
             ) * (
+                1 + 0.1 * BasicBuilding.getBuildingLevel('bank')
+            ) * (
                 1 + 0.2 * BasicResearch.getResearchLevel('banking')
             );
             if(BasicTemper.getCurrentTemper() === 'saving') {
@@ -3036,7 +3255,7 @@
         id: 'territory',
         name: 'Territory',
         isUnlocked: () => BasicMap.state.zonesAmounts[0] > 0,
-        getMax: () => Object.values(BasicMap.state.zonesAmounts).reduce((acc, one, index) => acc + 0.01*one*Math.pow(1.5, index), 0),
+        getMax: () => Object.values(BasicMap.state.zonesAmounts).reduce((acc, one, index) => acc + one*territotyPerZone(index), 0),
         getIncome: () => 0,
     },{
         id: 'wood',
@@ -3151,12 +3370,66 @@
             BasicResources.sendToUI();
         }
 
-        static getBalance(one) {
+        static getBalance(one, newState = {}) {
             return one.getIncome()
             + CreatureBasic.getBalanceById(one.id)
-            + CreatureJobs.getBalanceById(one.id)
+            + CreatureJobs.getBalanceById(one.id, newState?.creatureJobs)
             + BasicSkills.getBalanceById(one.id)
             + BasicActions.getBalanceById(one.id)
+        }
+
+        static getBalanceDifferences(potentialState, delta = 1.0) {
+            let result = {
+                isRisk: false,
+                delta,
+                resources: {},
+                riskResources: [],
+            };
+            resourcesData.forEach(res => {
+                const current = BasicResources.getBalance(res);
+                const potential = BasicResources.getBalance(res, potentialState);
+                const direction = Math.sign((potential - current) * delta); //positive = increase (prod), negative = decrease (cons)
+
+                result.resources[res.id] = {
+                    current,
+                    potential,
+                    diff: potential - current,
+                    isRisk: potential < 0 && potential - current < 0,
+                    direction,
+                };
+                if(result.resources[res.id].isRisk) {
+                    result.isRisk = true;
+                    let equilibrumAt = delta * (current / (current - potential));
+                    if(direction < 0) {
+                        equilibrumAt = Math.floor(equilibrumAt);
+                    } else {
+                        equilibrumAt = Math.ceil(equilibrumAt);
+                    }
+                    result.riskResources.push({
+                        id: res.id,
+                        name: res.name,
+                        equilibrumAt,
+                        direction,
+                    });
+                }
+            });
+            let minAcceptable = Math.min(0, delta);
+            let maxAcceptable = Math.max(0, delta);
+            result.riskResources.forEach(one => {
+                if(one.direction > 0) {
+                    minAcceptable = Math.max(minAcceptable, Math.ceil(one.equilibrumAt));
+                } else {
+                    maxAcceptable = Math.min(maxAcceptable, Math.floor(one.equilibrumAt));
+                }
+            });
+            result.minAcceptable = minAcceptable;
+            result.maxAcceptable = maxAcceptable;
+            if(delta < 0) {
+                result.optimum = minAcceptable;
+            } else {
+                result.optimum = maxAcceptable;
+            }
+            return result;
         }
 
         static sendToUI() {
@@ -3204,12 +3477,13 @@
             BasicResources.initialize();
             BasicActions.init();
             BasicSkills.initialize();
-            ShopItems.initialize();
+            ShopItems.initialize(isBannerPrestige);
             CreatureBasic.initialize(isBannerPrestige);
             CreatureJobs.initialize(isBannerPrestige);
             BasicMap.initialize();
             BasicFight.initialize();
             BasicBuilding.initialize();
+            BasicSettings.initialize(isBannerPrestige);
 
 
             if(BasicRun.interval) {
@@ -3242,6 +3516,7 @@
                 temper: BasicTemper.state,
                 autopurchaseUnlocked: BasicResearch.getResearchLevel('advancedAutomation') > 0,
                 autopurchaseOn: ShopItems.settings.autoPurchase,
+                settings: BasicSettings.settings,
             });
         }
 
@@ -3270,6 +3545,7 @@
                 creatureSettings: CreatureBasic.settings || { amount: 1 },
                 skills: BasicSkills.skills || {},
                 banners: BasicBanners.banners || BasicBanners.initialize(),
+                prevBanners: BasicBanners.prevBanners || {},
                 general: {
                     timeSpent: BasicRun.timeSpent || 0,
                 },
@@ -3278,6 +3554,7 @@
                 map: BasicMap.state || {},
                 buildings: BasicBuilding.buildings || {},
                 temper: BasicTemper.state || {},
+                settings: BasicSettings.settings || {},
             };
             console.log('saving: ', saveObject);
             return JSON.stringify(saveObject);
@@ -3304,11 +3581,16 @@
             BasicSkills.skills = save.skills || {};
             BasicRun.timeSpent = save.general?.timeSpent || 0;
             BasicBanners.banners = save.banners || BasicBanners.initialize();
+            BasicBanners.prevBanners = save.prevBanners;
+            if(!BasicBanners.prevBanners) {
+                BasicBanners.saveBannersToPrev();
+            }
             BasicResearch.researches = save.researches || {};
             BasicStory.story = save.story || BasicStory.initialize();
             BasicMap.state = save.map || BasicMap.initialize();
             BasicBuilding.buildings = save.buildings || BasicBuilding.initialize();
             BasicTemper.state = save.temper || BasicTemper.initialize();
+            BasicSettings.settings = save.settings || BasicSettings.initialize();
         }
 
         static save() {
@@ -3394,6 +3676,10 @@
         BasicTemper.sendToUI();
     });
 
+    ColibriWorker.on('get_settings_tab', () => {
+        BasicSettings.sendToUI();
+    });
+
     ColibriWorker.on('do_action', (id) => {
         BasicActions.performAction(id);
     });
@@ -3432,13 +3718,17 @@
         BasicBanners.doConvert({ id, tierIndex, percentage });
     });
 
+    ColibriWorker.on('do_revert_banner', id => {
+        BasicBanners.revert(id);
+    });
+
     ColibriWorker.on('do_select_temper', ({ id }) => {
         console.log('selecting temper: ', id);
         BasicTemper.setCurrentTemper(id);
     });
 
-    ColibriWorker.on('change_workers', ({ id, amount }) => {
-        CreatureJobs.updateWorkers({ id, amount });
+    ColibriWorker.on('change_workers', ({ id, amount, isConfirmed }) => {
+        CreatureJobs.updateWorkers({ id, amount, isConfirmed });
     });
 
     ColibriWorker.on('change_learning_efforts', ({ id, efforts }) => {
@@ -3483,6 +3773,10 @@
 
     ColibriWorker.on('import_game', (data) => {
         Main.importGame(data);
+    });
+
+    ColibriWorker.on('change_setting', ({path, value}) => {
+        BasicSettings.updateSetting(path, value);
     });
 
     ColibriWorker.on('do_build', ({ id }) => {
