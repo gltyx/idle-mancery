@@ -492,7 +492,7 @@ var cnItems = {
     "New home - new life": "新家——新生活",
     "per finished map": "每张完成的地图",
     "You get": "你会得到",
-    "Both": "都是",
+    "Both": "都显示",
     "Buttons": "按钮",
     "Confirmation Settings": "确认设置",
     "Input controls": "输入控制",
