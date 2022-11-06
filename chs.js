@@ -541,7 +541,7 @@ var cnItems = {
     "You finished map 19. You recieved 7.02 territory.": "您完成了地图 19。您获得了 7.02 领土。",
     "Normal  talisman of soulharvest": "普通的灵魂收割护身符",
     "Collapse items": "收起物品",
-    "Drop item": "掉落物品",
+    "Drop item": "移除物品",
     "Normal  talisman of energy": "正常的能量护身符",
     "You were about to portal back to you room in basement when you felt someones hand on your shoulder.": "当你感觉有人把手放在你的肩膀上时，你正要传送回地下室的房间。",
     "You: - Let's hope I won't die this time.": "你： - 希望这次我不会死。",
