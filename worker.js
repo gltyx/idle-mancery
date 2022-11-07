@@ -721,7 +721,7 @@
                 const jobData = jobsData.find(one => one.id === jobId);
                 const potCost = jobData.getCost(state.current);
                 const hasEnough = BasicResources.checkResourcesAvailable(potCost);
-                if(hasEnough.totalPercentage < dT) { // won't be able to afford, skip
+                if(hasEnough.totalPercentage < dT && CreatureJobs.workers[jobId].current > 0) { // won't be able to afford, skip
                     CreatureJobs.workers[jobId].skip = true;
                     if(jobData.isUnstable) {
                         CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
@@ -967,15 +967,15 @@
     };
 
     function secondsToHms(d) {
-        if(!d) return '';
+        if(!d) return '00:00:00';
         d = Number(d);
-        var h = Math.floor(d / 3600);
-        var m = Math.floor(d % 3600 / 60);
-        var s = Math.floor(d % 3600 % 60);
+        const h = Math.floor(d / 3600);
+        const m = Math.floor(d % 3600 / 60);
+        const s = Math.floor(d % 3600 % 60);
 
-        var hDisplay = h > 9 ? `${h}:` : `0${h}:`;
-        var mDisplay = m > 9 ? `${m}:` : `0${m}:`;
-        var sDisplay = s > 9 ? `${s}` : `0${s}`;
+        const hDisplay = h > 9 ? `${h}:` : `0${h}:`;
+        const mDisplay = m > 9 ? `${m}:` : `0${m}:`;
+        const sDisplay = s > 9 ? `${s}` : `0${s}`;
         return hDisplay + mDisplay + sDisplay;
     }
 
@@ -1089,6 +1089,7 @@
             }
 
             BasicBuilding.usedLand = null;
+            BasicBuilding.buildingQueue = [];
             return BasicBuilding.buildings;
         }
 
@@ -1205,7 +1206,7 @@
                     queued: findsInQueue[one.id] || 0,
                     maxBuildingProgress: one.getConstructionAmount(foundState.level + findsInQueue[one.id]),
                     timeFmt: BasicBuilding.getBuildingCapability()
-                        ? secondsToHms((one.getConstructionAmount(foundState.level + findsInQueue[one.id]) - foundState.buildingProgress) / BasicBuilding.getBuildingCapability())
+                        ? secondsToHms((one.getConstructionAmount(foundState.level + findsInQueue[one.id])) / BasicBuilding.getBuildingCapability())
                         : 'Never',
                     buildingSpeed: BasicBuilding.getBuildingCapability(),
                 }
@@ -1282,8 +1283,9 @@
             if(!firstInQueue.isPurchased) {
                 const cost = data.getCost(BasicBuilding.buildings[firstInQueue.id].level);
                 const availability = BasicResources.checkResourcesAvailable(cost);
-                if(!availability.isAvailable) {
+                if(!availability.isAvailable && BasicBuilding.checkEnoughtTerritory(firstInQueue.id, BasicBuilding.buildings[firstInQueue.id].level)) {
                     BasicBuilding.buildingQueue.shift();
+                    return;
                 }
                 BasicResources.subtractBatch(cost);
                 BasicBuilding.buildingQueue[0].isPurchased = true;
@@ -1485,6 +1487,16 @@
 
             return mlt;
         }
+        if(id === 'tools') {
+            let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
+
+            return mlt;
+        }
+        if(id === 'weapons') {
+            let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
+
+            return mlt;
+        }
         return 1.0;
     };
 
@@ -1646,7 +1658,7 @@
             ore: 20 * amount
         }),
         getGain: (amount) => ({
-            tools: 0.01 * amount * globalMult() * getResourceMult('ore')
+            tools: 0.01 * amount * globalMult() * getResourceMult('tools')
         }),
         category: 'Material'
     },{
@@ -1660,7 +1672,7 @@
             ore: 20 * amount
         }),
         getGain: (amount) => ({
-            weapons: 0.01 * amount * globalMult() * getResourceMult('ore')
+            weapons: 0.01 * amount * globalMult() * getResourceMult('weapons')
         }),
         category: 'Material'
     }];
@@ -1758,6 +1770,9 @@
         }
 
         static setAmount(amount) {
+            if (!amount) {
+                amount = 1;
+            }
             if(amount > 10000) {
                 amount = 10000;
             }
@@ -1765,6 +1780,9 @@
         }
 
         static process(dT) {
+            if(CreatureBasic.numCreatures < 0) {
+                CreatureBasic.numCreatures = 0;
+            }
             BasicResources.subtract('energy', CreatureBasic.getEnergyConsumption()
                 * dT);
             if(BasicResources.resources.energy <= 0 && CreatureBasic.numCreatures > 0) {
@@ -1988,7 +2006,7 @@
             hpBonus *= (1 + BasicHeirlooms.getTotalBonus('resilience'));
             let dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             dmgBonus *= Math.pow(1.1, BasicBuilding.getBuildingLevel('zeusStatue'));
-            dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('aggression'));
+            dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('agression'));
             const qt = CreatureJobs.getWorkerAmount('fighter');
             let totMult = 1.0;
             if(BasicTemper.getCurrentTemper() === 'aggressive') {
@@ -2142,7 +2160,7 @@
         getText: (amount) => `+${fmtVal(amount*100)}% to maximum mana`
     },{
         id: 'agression',
-        name: 'agression',
+        name: 'aggression',
         isUnlocked: () => true,
         base: 0.01,
         getText: (amount) => `+${fmtVal(amount*100)}% to creatures attack`
@@ -3779,8 +3797,8 @@
     },{
         id: 'territory',
         name: 'Territory',
-        isUnlocked: () => BasicMap.state.zonesAmounts[0] > 0,
-        getMax: () => Object.values(BasicMap.state.zonesAmounts).reduce((acc, one, index) => acc + one*territotyPerZone(index), 0),
+        isUnlocked: () => Object.values(BasicMap.state.zonesAmounts || {}).some(one => one > 0),
+        getMax: () => Object.entries(BasicMap.state.zonesAmounts).reduce((acc, [index,one]) => acc + one*territotyPerZone(+index), 0),
         getIncome: () => 0,
     },{
         id: 'wood',
@@ -4130,6 +4148,7 @@
                 story: BasicStory.story || {},
                 map: BasicMap.state || {},
                 buildings: BasicBuilding.buildings || {},
+                buildingsQueue: BasicBuilding.buildingQueue || [],
                 temper: BasicTemper.state || {},
                 settings: BasicSettings.settings || {},
                 heirlooms: BasicHeirlooms.state,
@@ -4167,6 +4186,7 @@
             BasicStory.story = save.story || BasicStory.initialize();
             BasicMap.state = save.map || BasicMap.initialize();
             BasicBuilding.buildings = save.buildings || BasicBuilding.initialize();
+            BasicBuilding.buildingQueue = save.buildingsQueue || [];
             BasicTemper.state = save.temper || BasicTemper.initialize();
             BasicSettings.settings = save.settings || BasicSettings.initialize();
             BasicHeirlooms.state = save.heirlooms || BasicHeirlooms.initialize();
