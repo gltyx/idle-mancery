@@ -1780,9 +1780,6 @@
         }
 
         static process(dT) {
-            if(CreatureBasic.numCreatures < 0) {
-                CreatureBasic.numCreatures = 0;
-            }
             BasicResources.subtract('energy', CreatureBasic.getEnergyConsumption()
                 * dT);
             if(BasicResources.resources.energy <= 0 && CreatureBasic.numCreatures > 0) {
@@ -2006,7 +2003,7 @@
             hpBonus *= (1 + BasicHeirlooms.getTotalBonus('resilience'));
             let dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             dmgBonus *= Math.pow(1.1, BasicBuilding.getBuildingLevel('zeusStatue'));
-            dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('agression'));
+            dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('aggression'));
             const qt = CreatureJobs.getWorkerAmount('fighter');
             let totMult = 1.0;
             if(BasicTemper.getCurrentTemper() === 'aggressive') {
@@ -2160,7 +2157,7 @@
         getText: (amount) => `+${fmtVal(amount*100)}% to maximum mana`
     },{
         id: 'agression',
-        name: 'aggression',
+        name: 'agression',
         isUnlocked: () => true,
         base: 0.01,
         getText: (amount) => `+${fmtVal(amount*100)}% to creatures attack`
