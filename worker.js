@@ -117,7 +117,7 @@
         id: 'timeManagement',
         name: 'Time-management',
         type: 'book',
-        description: 'Purchase time-management book that learn you to keep 2 actions auto-running',
+        description: 'Purchase time-management book to learn how to keep 2 actions auto-running',
         isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 75,
         getCost: () => ({
             gold: 100
@@ -375,121 +375,6 @@
         getMaxXP: (level) => 40 * Math.pow(1.56, level)
     }];
 
-    class BasicSkills {
-
-        static skills = {};
-
-        static initialize() {
-            BasicSkills.skills = {};
-        }
-
-        static skillLevel(id) {
-            return BasicSkills.skills[id] ? BasicSkills.skills[id].level : 0;
-        }
-
-        static getBalanceById(resourceId) {
-            let bal = 0;
-            if(resourceId === 'energy') {
-                const list = BasicSkills.getList();
-                list.forEach(item => {
-                    if (!item.efforts) {
-                        return;
-                    }
-                    bal -= +item.efforts;
-                });
-            }
-            return bal;
-        }
-
-        static initSkill() {
-            return {
-                xp: 0,
-                level: 0,
-                efforts: 0,
-            }
-        }
-
-        static getList() {
-            return learningData.map(one => {
-
-                const currentStatus = BasicSkills.skills[one.id] || BasicSkills.initSkill();
-
-                return {
-                    id: one.id,
-                    name: one.name,
-                    description: one.description,
-                    xp: currentStatus.xp,
-                    maxXp: one.getMaxXP(currentStatus.level),
-                    percentage: currentStatus.xp / one.getMaxXP(currentStatus.level),
-                    level: currentStatus.level,
-                    efforts: currentStatus.efforts,
-                    isUnlocked: one.isUnlocked(),
-                }
-            })
-        }
-
-        static setEffortsAll({ id, val }) {
-            if(!id) {
-                for(let key in BasicSkills.skills) {
-                    BasicSkills.skills[key].efforts = val;
-                }
-            } else {
-                BasicSkills.skills[id].efforts = val;
-            }
-        }
-
-        static setEfforts({ id, efforts }) {
-
-            const data = learningData.find(one => one.id === id);
-
-            if(!data) {
-                throw new Error(`Not found skill by id ${id}`);
-            }
-
-            if(efforts < 0) {
-                efforts = 0;
-            }
-
-            const maxEn = resourcesData.find(one => one.id === 'energy')?.getMax();
-
-            if(efforts > 0.5*maxEn) {
-                efforts = 0.5*maxEn;
-            }
-
-            if(!BasicSkills.skills[id]) {
-                BasicSkills.skills[id] = BasicSkills.initSkill();
-            }
-
-            BasicSkills.skills[id].efforts = efforts;
-        }
-
-        static process(dT) {
-            const list = BasicSkills.getList();
-            list.forEach(item => {
-                if(!item.efforts) {
-                    return;
-                }
-
-                const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
-                if(hasEnough.totalPercentage >= dT) {
-                    BasicSkills.skills[item.id].xp += item.efforts * dT * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
-                    if(item.maxXp <= BasicSkills.skills[item.id].xp) {
-                        BasicSkills.skills[item.id].xp = 0;
-                        BasicSkills.skills[item.id].level++;
-                    }
-
-                    BasicResources.subtractBatch({ energy: item.efforts * dT });
-                }
-            });
-        }
-
-        static sendToUI() {
-            const list = BasicSkills.getList();
-            ColibriWorker.sendToClient('set_skills_state', list);
-        }
-
-    }
-
     class ObjectUtils {
 
         static flattenObject(ob) {
@@ -565,6 +450,7 @@
                 BasicSettings.settings = {
                     inputControls: {
                         creatureJobs: 'both',
+                        learning: 'both'
                     },
                     notificationsSettings: {
                         whenCreatureDies: true,
@@ -575,10 +461,25 @@
                     },
                     confirmationSettings: {
                         whenGoNegative: true,
+                        whenSkillsNegative: true,
                     },
                     hotKeys: {
-
-                    }
+                        tab_actions: {
+                            key: '1',
+                            ctrlKey: false,
+                            shiftKey: false,
+                            altKey: true
+                        },
+                        tab_shop: {
+                            key: '2',
+                            ctrlKey: false,
+                            shiftKey: false,
+                            altKey: true
+                        },
+                        tab_story: null,
+                        tab_settings: null,
+                    },
+                    isUseCondensedTime: false,
                 };
             }
 
@@ -591,6 +492,155 @@
 
         static sendToUI() {
             ColibriWorker.sendToClient('set_settings_state', BasicSettings.settings);
+        }
+
+    }
+
+    class BasicSkills {
+
+        static skills = {};
+
+        static initialize() {
+            BasicSkills.skills = {};
+        }
+
+        static skillLevel(id) {
+            return BasicSkills.skills[id] ? BasicSkills.skills[id].level : 0;
+        }
+
+        static getBalanceById(resourceId, learning) {
+            let bal = 0;
+            if(resourceId === 'energy') {
+                const list = learning ? Object.values(learning || {}) : BasicSkills.getList();
+                list.forEach(item => {
+                    if (!item.efforts) {
+                        return;
+                    }
+                    bal -= +item.efforts;
+                });
+            }
+            return bal;
+        }
+
+        static initSkill() {
+            return {
+                xp: 0,
+                level: 0,
+                efforts: 0,
+            }
+        }
+
+        static getList() {
+            return learningData.map(one => {
+
+                const currentStatus = BasicSkills.skills[one.id] || BasicSkills.initSkill();
+
+                return {
+                    id: one.id,
+                    name: one.name,
+                    description: one.description,
+                    xp: currentStatus.xp,
+                    maxXp: one.getMaxXP(currentStatus.level),
+                    percentage: currentStatus.xp / one.getMaxXP(currentStatus.level),
+                    level: currentStatus.level,
+                    efforts: currentStatus.efforts,
+                    isUnlocked: one.isUnlocked(),
+                }
+            })
+        }
+
+        static setEffortsAll({ id, val }) {
+            if(!id) {
+                for(let key in BasicSkills.skills) {
+                    BasicSkills.skills[key].efforts = val;
+                }
+            } else {
+                BasicSkills.skills[id].efforts = val;
+            }
+        }
+
+        static setEfforts({ id, efforts, isConfirmed }) {
+
+            const data = learningData.find(one => one.id === id);
+
+            if(!data) {
+                throw new Error(`Not found skill by id ${id}`);
+            }
+
+            if(efforts < 0) {
+                efforts = 0;
+            }
+
+            resourcesData.find(one => one.id === 'energy')?.getMax();
+
+            /*if(efforts > 0.5*maxEn) {
+                efforts = 0.5*maxEn;
+            }*/
+
+            if(!BasicSkills.skills[id]) {
+                BasicSkills.skills[id] = BasicSkills.initSkill();
+            }
+
+            const bStats = BasicResources.getBalanceDifferences({
+                learning: {
+                    ...BasicSkills.skills,
+                    [id]: {efforts: efforts},
+                }
+            }, efforts - BasicSkills.skills[id].efforts);
+
+            if(!isConfirmed && bStats.isRisk && BasicSettings.settings.confirmationSettings?.whenSkillsNegative) {
+                ColibriWorker.sendToClient('spawn_confirm', {
+                    text: `Your changes can cause your ${bStats.riskResources.map(({ name }) => name).join(', ')} balance go negative. Are you sure?`,
+                    onConfirmAction: {
+                        type: 'change_learning_efforts',
+                        payload: {
+                            id,
+                            amount: efforts,
+                            isConfirmed: true,
+                        }
+                    },
+                    onCancelAction: {
+                        type: 'change_learning_efforts',
+                        payload: {
+                            id,
+                            amount: bStats.optimum,
+                            isConfirmed: true,
+                        }
+                    },
+                    buttons: {
+                        confirm: `Update worker amount`,
+                        cancel: `Update to safe amount`
+                    }
+                });
+                return;
+            }
+
+            BasicSkills.skills[id].efforts = efforts;
+        }
+
+        static process(dT) {
+            const list = BasicSkills.getList();
+            list.forEach(item => {
+                if(!item.efforts) {
+                    return;
+                }
+
+                const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
+                if(hasEnough.totalPercentage >= dT) {
+                    BasicSkills.skills[item.id].xp += item.efforts * dT * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
+                    if(item.maxXp <= BasicSkills.skills[item.id].xp) {
+                        BasicSkills.skills[item.id].xp = 0;
+                        BasicSkills.skills[item.id].level++;
+                    }
+
+                    BasicResources.subtractBatch({ energy: item.efforts * dT });
+                }
+            });
+        }
+
+        static sendToUI() {
+            const list = BasicSkills.getList();
+            ColibriWorker.sendToClient('set_skills_state', list);
         }
 
     }
@@ -645,7 +695,7 @@
                     [id]: {current: CreatureJobs.workers[id].current + amount},
                 }
             }, amount);
-            console.log('getRisk: ', bStats);
+            // console.log('getRisk: ', bStats);
             if(!isConfirmed && bStats.isRisk && BasicSettings.settings.confirmationSettings?.whenGoNegative) {
                 ColibriWorker.sendToClient('spawn_confirm', {
                     text: `Your changes can cause your ${bStats.riskResources.map(({ name }) => name).join(', ')} balance go negative. Are you sure?`,
@@ -1343,7 +1393,7 @@
         description: 'Increase maximum energy by 20 + 25%. Increase energy income by 20%. Start with 10 training stamina performed',
         isUnlocked: () => true,
         onStartRun: () => {
-            BasicActions.actions['physicalTraining'].performed = 10;
+            BasicActions.actions['physicalTraining'] = { performed: 10, cooldown: 0 };
         }
     },{
         id: 'spiritual',
@@ -1610,7 +1660,7 @@
     },{
         id: 'woodcutter',
         name: 'Woodcutter',
-        description: 'Provides raw material for building. Although it seems pretty cheap material, for some reason it\'s pretty hard to learn your creatures to cut wood',
+        description: 'Provides raw material for building. Although it seems pretty cheap material, for some reason it\'s pretty hard to teach your creatures to cut wood',
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (amount) => ({
             gold: 1500 * amount,
@@ -1699,18 +1749,52 @@
                 mult *= 0.25;
             }
             mult *= Math.pow(0.5, BasicBuilding.getBuildingLevel('pyramids'));
-            for(let i = 0; i < amt; i++) {
+            /*for(let i = 0; i < amt; i++) {
                 sls += mult * Math.pow(
                     (1.0 + 0.075 * Math.pow(0.95,
                         BasicResearch.getResearchLevel('necromancery')
                         + BasicResearch.getResearchLevel('summoner')
                     )),
                     (CreatureBasic.numCreatures + i)
-                );
-            }
+                )
+            }*/
+            let base = (1.0 + 0.075 * Math.pow(0.95,
+                BasicResearch.getResearchLevel('necromancery')
+                + BasicResearch.getResearchLevel('summoner')
+            ));
+            sls = (mult * Math.pow(base,CreatureBasic.numCreatures)*(Math.pow(base, amt) - 1))/(base-1);
+
             return {
                 souls: sls,
             }
+        }
+
+        static getMaxSummonable() {
+            const souls = BasicResources.resources.souls || 0;
+
+            let base = (1.0 + 0.075 * Math.pow(0.95,
+                BasicResearch.getResearchLevel('necromancery')
+                + BasicResearch.getResearchLevel('summoner')));
+
+            let mult = 1.;
+            if(BasicTemper.getCurrentTemper() === 'authoritative') {
+                mult = 0.8;
+            }
+            if(ShopItems.purchased['boneMasterity']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity2']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity3']) {
+                mult *= 0.25;
+            }
+            mult *= Math.pow(0.5, BasicBuilding.getBuildingLevel('pyramids'));
+
+            // sls * (base-1) / mult = Math.pow(base,CreatureBasic.numCreatures)*(Math.pow(base, amt) - 1);
+            // Math.pow(base, amt) = 1 + sls * (base-1) / (mult * Math.pow(base,CreatureBasic.numCreatures))
+            // amt = log_base (...)
+            return Math.floor(Math.log(1 + souls * (base-1) / (mult * Math.pow(base,CreatureBasic.numCreatures))) / Math.log(base));
         }
 
         static getBalanceById(resourceId) {
@@ -1743,6 +1827,14 @@
 
         }
 
+        static getMaxCreatures() {
+            const enRestriction = Math.floor(0.5 * resourcesData.find(one => one.id === 'energy').getMax() / CreatureBasic.getConsumptionPerCreature()) - CreatureBasic.numCreatures;
+
+            const slsRestriction = CreatureBasic.getMaxSummonable();
+
+            return Math.min(enRestriction, slsRestriction);
+        }
+
         static getInfo() {
             const bcost = BasicResources.checkResourcesAvailable(CreatureBasic.getSummonCost(CreatureBasic.settings.amount));
             if(bcost.isAvailable) {
@@ -1753,19 +1845,24 @@
                 cost: bcost,
                 energyRequired: CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0,
                 ...CreatureBasic.settings,
-                consumptionPerCreature: CreatureBasic.getConsumptionPerCreature()
+                consumptionPerCreature: CreatureBasic.getConsumptionPerCreature(),
+                max: CreatureBasic.getMaxCreatures(),
             }
         }
 
-        static summonCreature() {
-            const creatureCost = CreatureBasic.getSummonCost(CreatureBasic.settings.amount);
+        static summonCreature(quantity) {
+            let amt = CreatureBasic.settings.amount;
+            if(quantity > 1.e+300) {
+                amt = CreatureBasic.getMaxCreatures();
+            }
+            const creatureCost = CreatureBasic.getSummonCost(amt);
             const cost = BasicResources.checkResourcesAvailable(creatureCost);
             if(cost.isAvailable) {
-                cost.isAvailable = resourcesData.find(one => one.id === 'energy').getMax() >= CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0;
+                cost.isAvailable = resourcesData.find(one => one.id === 'energy').getMax() >= CreatureBasic.getEnergyConsumption(amt) * 2.0;
             }
             if(cost.isAvailable) {
                 BasicResources.subtractBatch(creatureCost);
-                CreatureBasic.numCreatures += CreatureBasic.settings.amount;
+                CreatureBasic.numCreatures += amt;
             }
         }
 
@@ -1887,14 +1984,14 @@
             if(!BasicBanners.banners[id]) {
                 return effectCumulative;
             }
+            let pEff = 1;
             Array.from({length: 6}).forEach((one, tierIndex) => {
                 const current = BasicBanners.banners[id][5 - tierIndex];
-                if(!current.amount) {
-                    effectCumulative = 1.0;
-                } else {
-                    const thisEffect = 7.03 * Math.pow(current.amount, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
-                    effectCumulative *= 1+0.01*thisEffect;
-                }
+
+                const thisEffect = 8.03 * Math.pow(current.amount || 0, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
+                effectCumulative = 1+0.01*thisEffect*pEff;
+
+                pEff = effectCumulative;
             });
             return effectCumulative;
         }
@@ -1909,6 +2006,8 @@
                 if(!BasicBanners.banners[bannerInfo.id]) {
                     BasicBanners.banners[bannerInfo.id] = BasicBanners.fillDefaultTiers();
                 }
+
+                let pEff = 0;
 
                 Array.from({length: 6}).forEach((one, tierIndex) => {
                     const current = BasicBanners.banners[bannerInfo.id][5-tierIndex];
@@ -1936,8 +2035,8 @@
                             timeLeft,
                         });
                     } else {
-                        const thisEffect = 7.03 * Math.pow(current.amount, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
-                        effectCumulative *= (1 + 0.01 * thisEffect);
+                        const thisEffect = 8.03 * Math.pow(current.amount, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
+                        effectCumulative = (1 + 0.01 * thisEffect * pEff);
                         tiers.unshift({
                             amount: current.amount,
                             tierId: 5-tierIndex,
@@ -1948,6 +2047,7 @@
                             canPrestige,
                             timeLeft
                         });
+                        pEff = effectCumulative;
                     }
                 });
 
@@ -2329,7 +2429,7 @@
                     if(BasicSettings.settings.notificationsSettings.whenBattleWon) {
                         // console.log('spawn_notification');
                         ColibriWorker.sendToClient('spawn_notification', {
-                            message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You recieved ${fmtVal(soulsGained)} souls.`
+                            message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You received ${fmtVal(soulsGained)} souls.`
                         });
                     }
                     if(BasicMap.state.level > 4) {
@@ -2343,7 +2443,7 @@
                     if(BasicMap.state.cell > 100) {
                         if(BasicSettings.settings.notificationsSettings.whenZoneFinished) {
                             ColibriWorker.sendToClient('spawn_notification', {
-                                message: `You finished map ${BasicMap.state.level}. You recieved ${fmtVal(territotyPerZone(BasicMap.state.level))} territory.`
+                                message: `You finished map ${BasicMap.state.level}. You received ${fmtVal(territotyPerZone(BasicMap.state.level))} territory.`
                             });
                         }
                         BasicMap.finishZone();
@@ -3836,6 +3936,15 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('forge') > 0,
         getMax: () => 0,
         getIncome: () => 0,
+    }
+
+
+    ,{
+        id: 'condensedTime',
+        name: 'Time',
+        isUnlocked: () => BasicResources.getResource('condensedTime') > 0,
+        getMax: () => 3600*4,
+        getIncome: () => 0,
     }];
 
     class BasicResources {
@@ -3957,7 +4066,7 @@
             return one.getIncome()
             + CreatureBasic.getBalanceById(one.id)
             + CreatureJobs.getBalanceById(one.id, newState?.creatureJobs)
-            + BasicSkills.getBalanceById(one.id)
+            + BasicSkills.getBalanceById(one.id, newState?.learning)
             + BasicActions.getBalanceById(one.id)
         }
 
@@ -4085,7 +4194,15 @@
             BasicRun.interval = setInterval(() => BasicRun.process(0.1), 100);
         }
 
-        static process(dT) {
+        static process(dt) {
+            let dT = dt;
+            if(!BasicResources.resources?.condensedTime || BasicResources.resources?.condensedTime <= 0) {
+                BasicSettings.settings.isUseCondensedTime = false;
+            } else
+            if(BasicSettings.settings.isUseCondensedTime) {
+                BasicResources.resources.condensedTime -= dt;
+                dT = 2 * dt;
+            }
             BasicResources.process(dT);
             BasicActions.process(dT);
             CreatureJobs.process(dT);
@@ -4118,6 +4235,8 @@
     }
 
     class Main {
+
+        static lastSave;
 
 
         static initialize() {
@@ -4152,6 +4271,8 @@
                 temper: BasicTemper.state || {},
                 settings: BasicSettings.settings || {},
                 heirlooms: BasicHeirlooms.state,
+
+                lastSave: Date.now(),
             };
             console.log('saving: ', saveObject);
             return JSON.stringify(saveObject);
@@ -4190,6 +4311,11 @@
             BasicTemper.state = save.temper || BasicTemper.initialize();
             BasicSettings.settings = save.settings || BasicSettings.initialize();
             BasicHeirlooms.state = save.heirlooms || BasicHeirlooms.initialize();
+            const now = Date.now();
+            if(save.lastSave && now - save.lastSave > 30000) {
+                const gain = (now - save.lastSave - 10000) / 1000;
+                BasicResources.add('condensedTime', gain);
+            }
         }
 
         static save() {
@@ -4334,8 +4460,8 @@
         CreatureJobs.updateWorkers({ id, amount, isConfirmed });
     });
 
-    ColibriWorker.on('change_learning_efforts', ({ id, efforts }) => {
-        BasicSkills.setEfforts({ id, efforts });
+    ColibriWorker.on('change_learning_efforts', ({ id, efforts, isConfirmed }) => {
+        BasicSkills.setEfforts({ id, efforts, isConfirmed });
     });
 
     ColibriWorker.on('all_learning_efforts', ({ id, val }) => {
