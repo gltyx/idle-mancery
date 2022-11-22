@@ -172,7 +172,7 @@
         id: 'betterSummoning',
         name: 'Summoning Effiency',
         type: 'book',
-        description: 'Purchase summoning effiency book to decrease energy consumed by creatures by 0.5',
+        description: 'Purchase summoning efficiency book to decrease energy consumed by creatures by 0.5',
         isUnlocked: () => ShopItems.purchased.summoning,
         getCost: () => ({
             gold: 1000
@@ -208,7 +208,7 @@
         id: 'summoningJobs',
         name: 'Summoning Jobs',
         type: 'book',
-        description: 'Purchase summoning jobs knowledge book to increase job effiency. +10% creature productions',
+        description: 'Purchase summoning jobs knowledge book to increase job efficiency. +10% creature productions',
         isUnlocked: () => ShopItems.purchased.summoning,
         getCost: () => ({
             gold: 4000
@@ -343,7 +343,7 @@
     },{
         id: 'brown',
         name: 'Brown banner',
-        description: 'Improves builders and building resources gatherers effiency',
+        description: 'Improves builders and building resources gatherers efficiency',
         color: '#aa8141',
         isUnlocked: () => BasicResearch.getResearchLevel('building') > 4,
         getEffect: (tiers) => tiers.reverse().reduce((acc, one) => acc *= (1 + 0.01*one.amount), 1),
@@ -352,13 +352,13 @@
     const learningData = [{
         id: 'initiative',
         name: 'Initiative',
-        description: 'Each level will boost your actions effiency by decreasing cooldowns by 1%',
+        description: 'Each level will boost your actions efficiency by decreasing cooldowns by 1%',
         isUnlocked: () => true,
         getMaxXP: (level) => 10 * Math.pow(1.32, level)
     },{
         id: 'perseverance',
         name: 'Perseverance',
-        description: 'Each level will boost your actions effiency by increasing their output by 1%',
+        description: 'Each level will boost your actions efficiency by increasing their output by 1%',
         isUnlocked: () => true,
         getMaxXP: (level) => 10 * Math.pow(1.32, level)
     },{
@@ -369,7 +369,7 @@
         getMaxXP: (level) => 20 * Math.pow(1.44, level)
     },{
         id: 'mana',
-        name: 'Mana effiency',
+        name: 'Mana efficiency',
         description: 'Each level will decrease mana costs of spells by 1%',
         isUnlocked: () => !!ShopItems.purchased.bookOfMagic,
         getMaxXP: (level) => 40 * Math.pow(1.56, level)
@@ -1852,6 +1852,9 @@
 
         static summonCreature(quantity) {
             let amt = CreatureBasic.settings.amount;
+            if(!amt) {
+                amt = 1;
+            }
             if(quantity > 1.e+300) {
                 amt = CreatureBasic.getMaxCreatures();
             }
@@ -2007,7 +2010,7 @@
                     BasicBanners.banners[bannerInfo.id] = BasicBanners.fillDefaultTiers();
                 }
 
-                let pEff = 0;
+                let pEff = 1;
 
                 Array.from({length: 6}).forEach((one, tierIndex) => {
                     const current = BasicBanners.banners[bannerInfo.id][5-tierIndex];
@@ -2535,7 +2538,7 @@
     },{
         id: 'spellMaster',
         name: 'Spells master',
-        description: 'Each level increase your spells effiency by 25%. After levels 5 and 10 unlock new researches',
+        description: 'Each level increase your spells efficiency by 25%. After levels 5 and 10 unlock new researches',
         isUnlocked: () => BasicResearch.getTotal('energizer') > 1,
         maxLevel: 0,
         getCost: (level) => ({
@@ -2544,7 +2547,7 @@
     },{
         id: 'tireless',
         name: 'Tireless',
-        description: 'Each level increase your actions effiency by 20%. After level 10 unlock new powerful research.',
+        description: 'Each level increase your actions efficiency by 20%. After level 10 unlock new powerful research.',
         isUnlocked: () => BasicResearch.getTotal('energizer') > 2,
         maxLevel: 0,
         getCost: (level) => ({
