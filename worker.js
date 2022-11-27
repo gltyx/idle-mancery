@@ -241,6 +241,15 @@
             gold: 12000
         }),
     },{
+        id: 'precisionTraining',
+        name: 'Fighting skills',
+        type: 'book',
+        description: 'Purchase book learn your creatures to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.appretienceManual,
+        getCost: () => ({
+            gold: 40000
+        }),
+    },{
         id: 'soulHarvester2',
         name: 'Advanced soul harvester',
         type: 'book',
@@ -275,6 +284,24 @@
         isUnlocked: () => ShopItems.purchased.boneMasterity,
         getCost: () => ({
             gold: 1000000
+        }),
+    },{
+        id: 'precisionTraining2',
+        name: 'Fighting skills 2',
+        type: 'book',
+        description: 'Purchase book learn your creatures to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.precisionTraining,
+        getCost: () => ({
+            gold: 900000
+        }),
+    },{
+        id: 'precisionTraining3',
+        name: 'Fighting skills 3',
+        type: 'book',
+        description: 'Purchase book learn your creatures to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.precisionTraining2,
+        getCost: () => ({
+            gold: 8100000
         }),
     },{
         id: 'boneMasterity3',
@@ -508,15 +535,16 @@
             return BasicSkills.skills[id] ? BasicSkills.skills[id].level : 0;
         }
 
-        static getBalanceById(resourceId, learning) {
+        static getBalanceById(resourceId, learning, bIgnoreEfficiency) {
             let bal = 0;
             if(resourceId === 'energy') {
+                const efficiency = BasicResources.efficiencies.energy?.efficiency || 0;
                 const list = learning ? Object.values(learning || {}) : BasicSkills.getList();
                 list.forEach(item => {
                     if (!item.efforts) {
                         return;
                     }
-                    bal -= +item.efforts;
+                    bal -= +item.efforts * (bIgnoreEfficiency ? 1 : efficiency);
                 });
             }
             return bal;
@@ -625,16 +653,17 @@
                     return;
                 }
 
-                const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
-                if(hasEnough.totalPercentage >= dT) {
-                    BasicSkills.skills[item.id].xp += item.efforts * dT * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
+                // const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
+                // if(hasEnough.totalPercentage >= dT) {
+                const eff = BasicResources.efficiencies.energy.efficiency;
+                    BasicSkills.skills[item.id].xp += eff*item.efforts * dT * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
                     if(item.maxXp <= BasicSkills.skills[item.id].xp) {
                         BasicSkills.skills[item.id].xp = 0;
                         BasicSkills.skills[item.id].level++;
                     }
 
-                    BasicResources.subtractBatch({ energy: item.efforts * dT });
-                }
+                    BasicResources.subtractBatch({ energy: item.efforts * dT * eff });
+                // }
             });
         }
 
@@ -738,6 +767,7 @@
                     cost: one.getCost(1),
                     isUnlocked: one.isUnlocked(),
                     current: CreatureJobs.workers[one.id]?.current || 0,
+                    efficiency: CreatureJobs.workers[one.id]?.efficiency,
                 }
             });
             return {
@@ -746,7 +776,7 @@
             }
         }
 
-        static getBalanceById(resourceId, updatedWorkers = null) {
+        static getBalanceById(resourceId, updatedWorkers = null, bIgnoreEfficiency = false) {
             let bal = 0;
             if(!updatedWorkers) {
                 updatedWorkers = CreatureJobs.workers;
@@ -756,10 +786,10 @@
                 const gain = jobData.getGain(state.current);
                 const cost = jobData.getCost(state.current);
                 if(gain && gain[resourceId]) {
-                    bal += gain[resourceId];
+                    bal += gain[resourceId] * (bIgnoreEfficiency ? 1 : state.efficiency);
                 }
                 if(cost && cost[resourceId]) {
-                    bal -= cost[resourceId];
+                    bal -= cost[resourceId] * (bIgnoreEfficiency ? 1 : state.efficiency);
                 }
             });
             return bal;
@@ -770,17 +800,31 @@
             Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
                 const jobData = jobsData.find(one => one.id === jobId);
                 const potCost = jobData.getCost(state.current);
-                const hasEnough = BasicResources.checkResourcesAvailable(potCost);
+                let efficiency = 1;
+                Object.keys(potCost).forEach(resId => {
+                    efficiency = Math.min(efficiency, BasicResources.efficiencies[resId]?.efficiency || 0);
+                });
+                if(efficiency < 1) {
+                    for(const key in potCost) {
+                        potCost[key] *= efficiency;
+                    }
+                }
+                CreatureJobs.workers[jobId].efficiency = efficiency;
+                BasicResources.checkResourcesAvailable(potCost);
+                if(efficiency < 1 && jobData.isUnstable) {
+                    CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
+                    CreatureBasic.numCreatures--;
+                } /* else
                 if(hasEnough.totalPercentage < dT && CreatureJobs.workers[jobId].current > 0) { // won't be able to afford, skip
                     CreatureJobs.workers[jobId].skip = true;
                     if(jobData.isUnstable) {
                         CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
                         CreatureBasic.numCreatures--;
                     }
-                } else {
+                } */ else {
                     CreatureJobs.workers[jobId].skip = false;
-                    CreatureJobs.workers[jobId].prodThisTick = BasicResources.multBatch(jobData.getGain(state.current), dT);
-                    CreatureJobs.workers[jobId].consThisTick = BasicResources.multBatch(jobData.getCost(state.current), dT);
+                    CreatureJobs.workers[jobId].prodThisTick = BasicResources.multBatch(jobData.getGain(state.current), dT * efficiency);
+                    CreatureJobs.workers[jobId].consThisTick = BasicResources.multBatch(jobData.getCost(state.current), dT * efficiency);
 
                     BasicResources.addBatch(CreatureJobs.workers[jobId].prodThisTick);
                     BasicResources.subtractBatch(CreatureJobs.workers[jobId].consThisTick);
@@ -845,6 +889,19 @@
         }),
         category: 'Military',
     },{
+        id: 'trainingCenter',
+        name: 'Training Center',
+        description: 'Each level increase your creatures base precision by 5 and evasion by 4',
+        getConstructionAmount: (level) => 5000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 1 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 4.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 160 * Math.pow(2, level),
+            stone: 20 * Math.pow(2, level),
+        }),
+        category: 'Military',
+    },{
         id: 'academy',
         name: 'Academy',
         description: 'Each level increase research production by 20%',
@@ -873,7 +930,7 @@
     }, {
         id: 'monument',
         name: 'Monument of Yourself',
-        description: 'Each level increase banners gain on prestige by 10%',
+        description: 'Each level increase banners gain on prestige by 10%. This effect is multiplied by your total fame amount.',
         getConstructionAmount: (level) => 4000 * Math.pow(2, level),
         getTerritoryAmount: (level) => 0.2 * Math.pow(2, level) * buildingCostModifier('territory'),
         isUnlocked: () => BasicBuilding.getBuildingLevel('palace') > 3,
@@ -964,7 +1021,33 @@
             stone: 20000 * Math.pow(4, level),
         }),
         category: 'Megastructure',
-    }];
+    },{
+            id: 'hallOfFame',
+            name: 'Hall of Fame',
+            description: 'Motivate your warriors to be more persistent at training. Each level increase your warriors precision and evasion by 25%. Persists through resets.',
+            getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
+            getTerritoryAmount: (level) => 0,
+            isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+            getCost: (level) => ({
+                gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+                ore: 40000 * Math.pow(4, level),
+                stone: 20000 * Math.pow(4, level),
+            }),
+            category: 'Megastructure',
+        },{
+            id: 'greatTreasury',
+            name: 'Great Treasury',
+            description: 'Each level increase your maximum gold by 50%. Persists through resets.',
+            getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
+            getTerritoryAmount: (level) => 0,
+            isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+            getCost: (level) => ({
+                gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+                wood: 400000 * Math.pow(4, level),
+                stone: 200000 * Math.pow(4, level),
+            }),
+            category: 'Megastructure',
+        }];
 
     const fmtVal = (val) => {
         if(val == null) return '0';
@@ -1012,6 +1095,36 @@
             case 11:
                 suffix = 'Dc';
                 break;
+            case 12:
+                suffix = 'UDc';
+                break;
+            case 13:
+                suffix = 'DDc';
+                break;
+            case 14:
+                suffix = 'TDc';
+                break;
+            case 15:
+                suffix = 'QaDc';
+                break;
+            case 16:
+                suffix = 'QiDc';
+                break;
+            case 17:
+                suffix = 'SxDc';
+                break;
+            case 18:
+                suffix = 'SpDc';
+                break;
+            case 19:
+                suffix = 'OcDc';
+                break;
+            case 20:
+                suffix = 'NDc';
+                break;
+            case 21:
+                suffix = 'Vi';
+                break;
         }
         return `${sign < 0 ? '-' : ''}${mpart}${suffix}`;
     };
@@ -1035,6 +1148,7 @@
             applied: [],
             saved: [],
             inventory: [],
+            filterMinTier: 0,
         }
 
         static initialize(isBannerPrestige) {
@@ -1043,6 +1157,7 @@
                     applied: [null, null],
                     saved: [null],
                     inventory: [],
+                    filterMinTier: 0,
                 };
             }
             BasicHeirlooms.state.inventory = Array.from({ length: 10 });
@@ -1075,8 +1190,13 @@
             return total;
         }
 
+        static setMinTier(tierId) {
+            BasicHeirlooms.state.filterMinTier = tierId;
+        }
+
         static giveToPlayer(heirloom) {
             const fInd = BasicHeirlooms.state.inventory.findIndex(one => one == null);
+            if(BasicHeirlooms.state.filterMinTier && heirloom.tier < BasicHeirlooms.state.filterMinTier) return;
             if(fInd > -1) {
                 BasicHeirlooms.state.inventory[fInd] = heirloom;
             }
@@ -1159,7 +1279,9 @@
             return effiency * CreatureJobs.getWorkerAmount('builder') * (
                 1 + 0.2 * BasicResearch.getResearchLevel('building')
             ) * BasicBanners.getBonus('brown') * dT
-                * (1 + BasicHeirlooms.getTotalBonus('creation'));    }
+                * (1 + BasicHeirlooms.getTotalBonus('creation'))
+                * Math.pow(1.05, BasicResearch.getResearchLevel('levitation'));
+        }
 
         static getUsedTerritory() {
             let usedLand = 0;
@@ -1333,7 +1455,7 @@
             if(!firstInQueue.isPurchased) {
                 const cost = data.getCost(BasicBuilding.buildings[firstInQueue.id].level);
                 const availability = BasicResources.checkResourcesAvailable(cost);
-                if(!availability.isAvailable && BasicBuilding.checkEnoughtTerritory(firstInQueue.id, BasicBuilding.buildings[firstInQueue.id].level)) {
+                if(!availability.isAvailable || !BasicBuilding.checkEnoughtTerritory(firstInQueue.id, BasicBuilding.buildings[firstInQueue.id].level)) {
                     BasicBuilding.buildingQueue.shift();
                     return;
                 }
@@ -1468,6 +1590,513 @@
 
     }
 
+    const auraData = [{
+        id: 'gold',
+        name: 'Greediness',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to gold income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'goldBase',
+        name: 'Greediness',
+        baseEffect: 50,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to gold income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'goldMax',
+        name: 'Saving',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to gold maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'goldMaxBase',
+        name: 'Saving',
+        baseEffect: 500,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to gold maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'energy',
+        name: 'Energizer',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to energy income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'energyBase',
+        name: 'Energizer',
+        baseEffect: 25,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to energy income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'energyMax',
+        name: 'Endurance',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to energy maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'energyMaxBase',
+        name: 'Endurance',
+        baseEffect: 250,
+        baseGrowth: 4,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to energy maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'mana',
+        name: 'Wizard',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to mana income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'manaBase',
+        name: 'Wizard',
+        baseEffect: 15,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to mana income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'manaMax',
+        name: 'Wisdom',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to mana maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'manaMaxBase',
+        name: 'Wisdom',
+        baseEffect: 100,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to mana maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'souls',
+        name: 'Souls harvest',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to souls income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'soulsBase',
+        name: 'Souls harvest',
+        baseEffect: 1,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to souls income`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'herbsMax',
+        name: 'Herbalism',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to herbs maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'herbsMaxBase',
+        name: 'Herbalism',
+        baseEffect: 1,
+        baseGrowth: 1,
+        expBase: 1.15,
+        effectText: (amount) => `+${fmtVal(amount)} to herbs maximum`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'research',
+        name: 'Scientist',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to research gain`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.isResearchUnlocked(),
+    },{
+        id: 'territory',
+        name: 'Expansion',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to territory gain`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+    },{
+        id: 'wood',
+        name: 'Woodcutter',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to wood income`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+    },{
+        id: 'woodMax',
+        name: 'Woodstock',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to wood max`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+    },{
+        id: 'stone',
+        name: 'Stonecutter',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to stone income`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+    },{
+        id: 'stoneMax',
+        name: 'Stonepile',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to stone max`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+    },{
+        id: 'ore',
+        name: 'Miner',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to ore income`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('oreMining') > 0,
+    },{
+        id: 'oreMax',
+        name: 'Ore stock',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to ore max`,
+        rarity: 1,
+        isUnlocked: () => BasicResearch.getResearchLevel('oreMining') > 0,
+    },{
+        id: 'evasion',
+        name: 'Evasion',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to creatures evasion`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'evasionBase',
+        name: 'Evasion',
+        baseEffect: 0.5,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount)} to creatures evasion`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'accuracy',
+        name: 'Accuracy',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to creatures accuracy`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'accuracyBase',
+        name: 'Accuracy',
+        baseEffect: 0.5,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount)} to creatures accuracy`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'health',
+        name: 'Health',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to creatures HP`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'healthBase',
+        name: 'Health',
+        baseEffect: 0.2,
+        baseGrowth: 0.1,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount)} to creatures HP`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'damage',
+        name: 'Damage',
+        baseEffect: 0.01,
+        baseGrowth: 0.2,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount*100)}% to creatures damage`,
+        rarity: 1,
+        isUnlocked: () => true,
+    },{
+        id: 'damageBase',
+        name: 'Damage',
+        baseEffect: 0.04,
+        baseGrowth: 0.1,
+        expBase: 1.03,
+        effectText: (amount) => `+${fmtVal(amount)} to creatures damage`,
+        rarity: 1,
+        isUnlocked: () => true,
+    }];
+
+    class AuraStats {
+
+        static getMaxXp(aura) {
+            return 1000 * Math.pow(1.2, aura.level);
+        }
+
+        static addAuraProgress(aura, invested) {
+            if(!aura.maxXp) {
+                aura.maxXp = AuraStats.getMaxXp(aura);
+            }
+            if(Number.isNaN(invested) || invested <= 0) {
+                invested = 0;
+            }
+            aura.xp += Math.pow(invested, 0.5) / 10;
+            if(aura.xp >= aura.maxXp) {
+                aura.xp = 0;
+                aura.level++;
+                aura.maxXp = AuraStats.getMaxXp(aura);
+            }
+        }
+
+        static calculateTotalBonus(bonus, level) {
+            const bonusDB = auraData.find(one => one.id === bonus.id);
+            bonus.effect = bonus.baseEff * (1 + bonus.baseGrowth * level * Math.pow(bonus.expBase, level));
+            bonus.text = bonusDB.effectText(bonus.effect);
+            return bonus;
+        }
+
+        static getRealAuraBonus(auraData) {
+            for(let i = 0; i < auraData.bonuses.length; i++) {
+                auraData.bonuses[i] = AuraStats.calculateTotalBonus(auraData.bonuses[i], auraData.level);
+            }
+            return auraData;
+        }
+
+        static getPlainData(auraData) {
+            const nw = AuraStats.getRealAuraBonus(auraData);
+            return {
+                ...nw,
+                bonuses: nw.bonuses.map(({ effect, text }) => ({ effect, text })),
+            }
+        }
+
+    }
+
+    class BasicAuras {
+
+        static state = {
+            activeIndexes: [],
+            auras: [],
+            currentBonus: {},
+            filterMinTier: 0,
+        }
+
+        static initialize(isBannerPrestige) {
+            if(!BasicAuras.state || !isBannerPrestige) {
+                BasicAuras.state = {
+                    activeIndexes: [],
+                    auras: [],
+                };
+            }
+            return BasicAuras.state;
+        }
+
+        static getCurrentAurasBonus() {
+            if(!BasicAuras.state.activeIndexes.length) {
+                return {};
+            }
+            const currents = BasicAuras.state.activeIndexes.map(({index}) => BasicAuras.state.auras[index]);
+            const calculated = currents.map(current => AuraStats.getRealAuraBonus(current));
+            const bonuses = {};
+            calculated.forEach(one => {
+                one.bonuses.forEach(bonus => {
+                    if(!bonuses[bonus.id]) {
+                        bonuses[bonus.id] = 0;
+                    }
+                    bonuses[bonus.id] += bonus.effect;
+                });
+            });
+            return bonuses;
+        }
+
+        static getList() {
+            return BasicAuras.state.auras.map((one, index) => ({
+                ...AuraStats.getPlainData(one),
+                isTurnedOn: !!BasicAuras.state.activeIndexes.find(one => one.index === index),
+                effort: BasicAuras.state.activeIndexes.find(one => one.index === index)?.effort,
+                index,
+            }));
+        }
+
+        static setMinTier(tierId) {
+            BasicAuras.state.filterMinTier = tierId;
+        }
+
+        static giveToPlayer(aura) {
+            if(BasicAuras.state.auras.length > 50) return;
+            if(BasicAuras.state.filterMinTier && aura.tier < BasicAuras.state.filterMinTier) return;
+            BasicAuras.state.auras.push(aura);
+        }
+
+        static dropAura(index) {
+            BasicAuras.state.activeIndexes.forEach(({ index: itInd }, i) => {
+                if(itInd === index) {
+                    BasicAuras.state.activeIndexes.splice(
+                        i,
+                        1
+                    );
+                } else if (itInd > index) {
+                    BasicAuras.state.activeIndexes[i].index--;
+                }
+            });
+
+            BasicAuras.state.auras.splice(index, 1);
+        }
+
+        static getMax() {
+            return BasicResearch.getResearchLevel('auras');
+        }
+
+        static toggleActivate(index) {
+            if(BasicAuras.state.activeIndexes.find(one => one.index === index)) {
+                BasicAuras.state.activeIndexes.splice(
+                    BasicAuras.state.activeIndexes.findIndex(one => one.index === index),
+                    1
+                );
+            } else {
+                if(BasicAuras.state.activeIndexes.length < BasicAuras.getMax()) {
+                    BasicAuras.state.activeIndexes.push({index, effort: 0});
+                } else {
+                    BasicAuras.state.activeIndexes[BasicAuras.state.activeIndexes.length-1] = {index, effort: 0};
+                }
+            }
+        }
+
+        static getTotalInvested() {
+            return BasicAuras.state.activeIndexes.reduce((acc, item) => acc += item.effort, 0);
+        }
+
+        static setEffort(index, effort) {
+            const activeIndex = BasicAuras.state.activeIndexes.findIndex(one => one.index === index);
+            const investedTotal = BasicAuras.getTotalInvested();
+            const oldInvested = BasicAuras.state.activeIndexes[activeIndex].effort;
+            BasicAuras.state.activeIndexes[activeIndex].effort = Math.min(effort, 1 - investedTotal + oldInvested);
+        }
+
+        static getEffect(id) {
+            return BasicAuras.state.currentBonus?.[id] || 0;
+        }
+
+        static getTotalBonuses(auras) {
+            const list = auras
+                .map(({ index }) => BasicAuras.state.auras[index])
+                .filter(one => !!one);
+
+            const totalBonuses = list
+                .map(aura => AuraStats.getRealAuraBonus(aura))
+                .reduce((acc, one) => {
+                    one.bonuses.forEach(bonus => {
+                        if(!acc[bonus.id]) {
+                            acc[bonus.id] = 0;
+                        }
+                        acc[bonus.id] += bonus.effect;
+
+                    });
+                    return acc;
+                }, {});
+
+            return totalBonuses;
+        }
+
+        static getBalanceById(id, auras) {
+            let totl = 0;
+            let state = auras || BasicAuras.state.activeIndexes;
+            if(id === 'mana') {
+                if(state.length) {
+                    const manaIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'mana'), { auras: [] });
+                    if(manaIncome > 0) {
+                        totl -= manaIncome * state.reduce((acc, one) => acc += one.effort, 0);
+                    }
+                }
+            }
+            return totl;
+        }
+
+        static process(dT) {
+            const manaIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'mana'), { auras: [] });
+            if(manaIncome <= 0) return;
+            BasicAuras.state.activeIndexes.forEach((one, ind) => {
+                if(!BasicAuras.state.auras[one.index]) {
+                    console.error('Aura not found');
+                    BasicAuras.state.activeIndexes.splice(ind, 1);
+                }
+                AuraStats.addAuraProgress(BasicAuras.state.auras[one.index], one.effort * dT * manaIncome);
+
+                // take in play absolute resources increments here
+            });
+            BasicAuras.state.currentBonus = BasicAuras.getTotalBonuses(BasicAuras.state.activeIndexes);
+            // console.log('curBonus: ', BasicAuras.state.currentBonus);
+        }
+
+
+        static sendToUI() {
+            ColibriWorker.sendToClient('set_auras_state', {
+                list: BasicAuras.getList(),
+                current: BasicAuras.state.activeIndexes,
+                currentBonus: BasicAuras.state.currentBonus,
+                filterMinTier: BasicAuras.state.filterMinTier,
+            });
+        }
+
+        static aurasUnlocked() {
+            return BasicResearch.getResearchLevel('auras') > 0;
+        }
+
+    }
+
     const getSpellMultiplier = () => {
         return BasicBanners.getBonus('green')
             * (1 + 0.25 * BasicResearch.getResearchLevel('spellMaster'))
@@ -1477,6 +2106,7 @@
             * (1 + 0.5*(ShopItems.purchased.advancedMagic2 ? 1 : 0))
             * (1 + 0.5*(ShopItems.purchased.advancedMagic3 ? 1 : 0))
             * Math.pow(1.01, BasicSkills.skillLevel('magic'))
+            * (1 + BasicAuras.getEffect('spellEfficiency'))
     };
 
 
@@ -1499,6 +2129,9 @@
                 mlt = 1.2;
             }
             mlt *= 1 + BasicHeirlooms.getTotalBonus('greediness');
+
+            mlt *= 1 + BasicAuras.getEffect('gold');
+
             return mlt * (1 + 0.1 * BasicBuilding.getBuildingLevel('palace')) * (
                 1 + 0.1 * BasicBuilding.getBuildingLevel('bank')
             );
@@ -1508,6 +2141,9 @@
             if(BasicTemper.getCurrentTemper() === 'energetic') {
                 mlt = 1.2;
             }
+
+            mlt *= 1 + BasicAuras.getEffect('energy');
+
             return mlt;
         }
         if(id === 'mana') {
@@ -1515,11 +2151,19 @@
             if(BasicTemper.getCurrentTemper() === 'spiritual') {
                 mlt = 1.2;
             }
+
+            mlt *= 1 + BasicAuras.getEffect('mana');
+
             return mlt;
         }
         if(id === 'souls') {
-            return (1 + 0.2 * BasicBuilding.getBuildingLevel('graveyard'))
+
+            let mlt = (1 + 0.2 * BasicBuilding.getBuildingLevel('graveyard'))
             * (1 + BasicHeirlooms.getTotalBonus('soulharvest'));
+
+            mlt *= 1 + BasicAuras.getEffect('souls');
+
+            return mlt;
         }
         if(id === 'research') {
             let mlt = 1 + 0.2 * BasicResearch.getResearchLevel('darkExperiments');
@@ -1527,6 +2171,9 @@
                 mlt = 1.2;
             }
             mlt *= 1 + 0.25 * BasicBuilding.getBuildingLevel('greatLibrary');
+
+            mlt *= 1 + BasicAuras.getEffect('research');
+
             return mlt * (1 + (0.2 + 0.05 * BasicResearch.getResearchLevel('darkExperiments'))
                 * BasicBuilding.getBuildingLevel('academy'))
         }
@@ -1535,15 +2182,27 @@
 
             mlt *= 1 + 0.1 * BasicResearch.getResearchLevel('oreMining');
 
+            mlt *= 1 + BasicAuras.getEffect('ore');
+
             return mlt;
         }
         if(id === 'tools') {
             let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
 
+            mlt *= 1 + BasicAuras.getEffect('tools');
+
             return mlt;
         }
         if(id === 'weapons') {
             let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
+
+            mlt *= 1 + BasicAuras.getEffect('weapons');
+
+
+            return mlt;
+        }
+        if(id === 'flasksOfAgility') {
+            let mlt = 1 + 0.1 * BasicResearch.getResearchLevel('alchemy');
 
             return mlt;
         }
@@ -1555,12 +2214,16 @@
         if(type === 'territory' || type === 'gold') {
             mlt *= Math.pow(0.9, BasicResearch.getResearchLevel('cityPlanning'));
         }
+
+        mlt /= 1 + BasicAuras.getEffect('buildingCost');
+
         return mlt;
     };
 
-    const territotyPerZone = (index) => 0.03*Math.pow(1.3, index)
+    const territotyPerZone = (index) => 0.04*Math.pow(1.3, index)
         * (1 + 0.2 * BasicBuilding.getBuildingLevel('watchTower'))
-        * (1 + BasicHeirlooms.getTotalBonus('expansion'));
+        * (1 + BasicHeirlooms.getTotalBonus('expansion'))
+        * (1 + BasicAuras.getEffect('territoryMax'));
 
     const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect()
         *BasicResources.getToolsEffect()
@@ -1633,11 +2296,25 @@
     },{
         id: 'sergeant',
         name: 'Sergeant',
-        getDescription: () => `Improves fighter stats by ${fmtVal(20 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics')))}%`,
+        getDescription: () => `Improves fighter attack and HP by ${fmtVal(20 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics')))}%`,
         isUnlocked: () => BasicResearch.getResearchLevel('combatTactics') > 0,
         getCost: (amount) => ({
             gold: 800 * amount,
             mana: 400 * amount,
+        }),
+        getGain: (amount) => ({
+
+        }),
+        isUnstable: true,
+        category: 'Combat',
+    },{
+        id: 'trainer',
+        name: 'Trainer',
+        getDescription: () => `Improves fighter accuracy and evasion by ${fmtVal(10 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics')))}%`,
+        isUnlocked: () => BasicResearch.getResearchLevel('combatTactics') > 0,
+        getCost: (amount) => ({
+            gold: 500 * amount,
+            mana: 800 * amount,
         }),
         getGain: (amount) => ({
 
@@ -1725,13 +2402,29 @@
             weapons: 0.01 * amount * globalMult() * getResourceMult('weapons')
         }),
         category: 'Material'
+    },{
+        id: 'alchemistAgility',
+        name: 'Alchemist (flask of agility)',
+        description: 'Converts your flasks and research into flasks of agility, that provides bonus to your creatures evasion and accuracy',
+        isUnlocked: () => BasicResearch.getResearchLevel('alchemy') > 0,
+        getCost: (amount) => ({
+            gold: 50000 * amount,
+            flasks: 100 * amount,
+            research: 200000 * amount
+        }),
+        getGain: (amount) => ({
+            flasksOfAgility: 0.01 * amount * globalMult() * getResourceMult('flasksOfAgility')
+        }),
+        category: 'Alchemy'
     }];
 
     class CreatureBasic {
 
         static numCreatures = 0;
 
-        static settings = {};
+        static settings = {
+            amount: 1,
+        };
 
         static getSummonCost(amt = 1) {
             let sls = 0;
@@ -1844,6 +2537,7 @@
                 numCreatures: CreatureBasic.numCreatures,
                 cost: bcost,
                 energyRequired: CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0,
+                isEnoughEnergy: CreatureBasic.getEnergyConsumption(CreatureBasic.settings.amount) * 2.0 <= resourcesData.find(one => one.id === 'energy').getMax(),
                 ...CreatureBasic.settings,
                 consumptionPerCreature: CreatureBasic.getConsumptionPerCreature(),
                 max: CreatureBasic.getMaxCreatures(),
@@ -1852,7 +2546,7 @@
 
         static summonCreature(quantity) {
             let amt = CreatureBasic.settings.amount;
-            if(!amt) {
+            if(!amt || Number.isNaN(amt)) {
                 amt = 1;
             }
             if(quantity > 1.e+300) {
@@ -1870,7 +2564,7 @@
         }
 
         static setAmount(amount) {
-            if (!amount) {
+            if (!amount || Number.isNaN(amount)) {
                 amount = 1;
             }
             if(amount > 10000) {
@@ -1880,11 +2574,17 @@
         }
 
         static process(dT) {
+            if(!CreatureBasic.settings.amount) {
+                CreatureBasic.settings.amount = 1;
+            }
             if(CreatureBasic.numCreatures < 0) {
                 CreatureBasic.numCreatures = 0;
             }
             BasicResources.subtract('energy', CreatureBasic.getEnergyConsumption()
                 * dT);
+        }
+
+        static postProcess(dT) {
             if(BasicResources.resources.energy <= 0 && CreatureBasic.numCreatures > 0) {
                 const loss = Math.max(1, Math.round(0.1*CreatureBasic.numCreatures));
                 CreatureBasic.numCreatures -= loss;
@@ -1920,7 +2620,7 @@
         }
 
         static getBannersOnPrestige = () => {
-            return CreatureBasic.numCreatures * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument'));
+            return CreatureBasic.numCreatures * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument') * (1 + BasicResources.getResource('fame')));
         }
 
         static initialize() {
@@ -2098,10 +2798,269 @@
 
     }
 
+    const bossesData = [{
+        name: 'Big skeleton',
+        quantity: 1,
+        damage: 411,
+        maxHP: 300000,
+        defense: 12,
+        armor: 25,
+        accuracy: 1800,
+        evasion: 2400,
+        critChance: 0.1,
+        critMult: 2,
+    },{
+        name: 'Bones Breaker',
+        quantity: 1,
+        damage: 2022,
+        maxHP: 425000,
+        defense: 12,
+        armor: 125,
+        accuracy: 4800,
+        evasion: 3400,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Abomination',
+        quantity: 1,
+        damage: 10240,
+        maxHP: 999990,
+        defense: 32,
+        armor: 14,
+        accuracy: 5700,
+        evasion: 1400,
+        critChance: 0.5,
+        critMult: 5,
+    },{
+        name: 'Bandit Skeleton',
+        quantity: 1,
+        damage: 30240,
+        maxHP: 2050000,
+        defense: 32,
+        armor: 440,
+        accuracy: 12700,
+        evasion: 14000,
+        critChance: 0.5,
+        critMult: 2,
+    },{
+        name: 'Lich',
+        quantity: 1,
+        damage: 70240,
+        maxHP: 6480000,
+        defense: 32,
+        armor: 1400,
+        accuracy: 21400,
+        evasion: 1400,
+        critChance: 0.2,
+        critMult: 2,
+    },{
+        name: 'Awesome Skeleton Warriors',
+        quantity: 1,
+        damage: 273167,
+        maxHP: 9750000,
+        defense: 32,
+        armor: 7400,
+        accuracy: 71400,
+        evasion: 1400,
+        critChance: 0.1,
+        critMult: 3,
+    },{
+        name: 'The Shadow',
+        quantity: 1,
+        damage: 670240,
+        maxHP: 10750000,
+        defense: 16,
+        armor: 18,
+        accuracy: 12140000,
+        evasion: 675000,
+        critChance: 0.75,
+        critMult: 3,
+    },{
+        name: 'Million of Rats',
+        quantity: 1000000,
+        damage: 240,
+        maxHP: 225,
+        defense: 1,
+        armor: 1,
+        accuracy: 2040000,
+        evasion: 140000,
+        critChance: 0.2,
+        critMult: 1.6,
+    },{
+        name: 'Mavka',
+        quantity: 1,
+        damage: 3.e+6,
+        maxHP: 5.e+8,
+        defense: 16,
+        armor: 18000,
+        accuracy: 6214000,
+        evasion: 187500,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'The Beast of the Moor',
+        quantity: 1,
+        damage: 1.e+7,
+        maxHP: 1.e+9,
+        defense: 16,
+        armor: 3.e+4,
+        accuracy: 2.e+7,
+        evasion: 999,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'Leviathan',
+        quantity: 1,
+        damage: 3.e+7,
+        maxHP: 2.e+9,
+        defense: 16,
+        armor: 1.e+2,
+        accuracy: 2.e+7,
+        evasion: 879039,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'Ancient Spearmen',
+        quantity: 1,
+        damage: 6.e+7,
+        maxHP: 4.e+9,
+        defense: 448,
+        armor: 1.e+4,
+        accuracy: 6.e+7,
+        evasion: 400000,
+        critChance: 0.6,
+        critMult: 2.5,
+    },{
+        name: 'Ancient Axeman',
+        quantity: 1,
+        damage: 9.e+7,
+        maxHP: 8.e+9,
+        defense: 675,
+        armor: 1.4e+4,
+        accuracy: 9.e+7,
+        evasion: 900000,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Ancient Swordsman',
+        quantity: 1,
+        damage: 3.e+8,
+        maxHP: 2.25e+10,
+        defense: 1675,
+        armor: 1.4e+4,
+        accuracy: 4.e+8,
+        evasion: 9.e+6,
+        critChance: 0.4,
+        critMult: 3,
+    },{
+        name: 'Swordsman legion',
+        quantity: 1000,
+        damage: 1.e+6,
+        maxHP: 7.25e+7,
+        defense: 1675,
+        armor: 1.4e+4,
+        accuracy: 9.e+8,
+        evasion: 9.e+6,
+        critChance: 0.4,
+        critMult: 3,
+    },{
+        name: 'Stone golem',
+        quantity: 1,
+        damage: 4.e+9,
+        maxHP: 7.25e+10,
+        defense: 1675,
+        armor: 9.4e+4,
+        accuracy: 4.e+9,
+        evasion: 6.e+5,
+        critChance: 0.1,
+        critMult: 2,
+    },{
+        name: 'Iron golem',
+        quantity: 1,
+        damage: 9.e+9,
+        maxHP: 3.25e+11,
+        defense: 10675,
+        armor: 9.4e+5,
+        accuracy: 9.e+9,
+        evasion: 6.e+5,
+        critChance: 0.1,
+        critMult: 2,
+    },{
+        name: 'Titanium golem',
+        quantity: 1,
+        damage: 1.8e+10,
+        maxHP: 6.25e+11,
+        defense: 10675,
+        armor: 1.4e+6,
+        accuracy: 9.e+10,
+        evasion: 6.e+5,
+        critChance: 0.1,
+        critMult: 2,
+    },{
+        name: 'Diamond golem',
+        quantity: 1,
+        damage: 2.6e+10,
+        maxHP: 1.35e+12,
+        defense: 19675,
+        armor: 1.9e+6,
+        accuracy: 9.e+10,
+        evasion: 6.e+5,
+        critChance: 0.1,
+        critMult: 2,
+    },{
+        name: 'Succubus',
+        quantity: 1,
+        damage: 2.6e+11,
+        maxHP: 1.85e+12,
+        defense: 19675,
+        armor: 4.e+4,
+        accuracy: 1.7e+12,
+        evasion: 4.e+8,
+        critChance: 0.4,
+        critMult: 8,
+    },{
+        name: 'Imps',
+        quantity: 100,
+        damage: 2.0e+10,
+        maxHP: 1.45e+11,
+        defense: 19675,
+        armor: 6.e+4,
+        accuracy: 5.7e+12,
+        evasion: 6.e+9,
+        critChance: 0.4,
+        critMult: 8,
+    },{
+        name: 'Enforced Imps',
+        quantity: 100,
+        damage: 5.1e+10,
+        maxHP: 1.45e+11,
+        defense: 29675,
+        armor: 6.e+5,
+        accuracy: 5.7e+12,
+        evasion: 6.e+9,
+        critChance: 0.4,
+        critMult: 8,
+    },{
+        name: 'Azragard',
+        quantity: 1,
+        damage: 1.e+56,
+        maxHP: 3.25e+64,
+        defense: 1.e+23,
+        armor: 9.4e+35,
+        accuracy: 9.e+37,
+        evasion: 7.2e+35,
+        critChance: 0.3,
+        critMult: 128,
+    }];
+
     class FightParties {
 
         static getWeaponsEffect() {
             return 1 + 0.045*Math.pow((BasicResources.resources.weapons || 0), 0.5)
+        }
+
+        static getFlaskOfAgilityEffect() {
+            return 1 + 0.025*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.5);
         }
 
         static generateMy() {
@@ -2110,34 +3069,153 @@
             let dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             dmgBonus *= Math.pow(1.1, BasicBuilding.getBuildingLevel('zeusStatue'));
             dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('agression'));
+            let precisionBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
+            let evadeBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
+            let armorBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
+
+            precisionBonus *= 1 + 0.25*BasicResearch.getResearchLevel('combatReflexes');
+            evadeBonus *= 1 + 0.25*BasicResearch.getResearchLevel('combatReflexes');
+
+            precisionBonus *= (1 + BasicHeirlooms.getTotalBonus('precision'));
+            evadeBonus *= (1 + BasicHeirlooms.getTotalBonus('evasion'));
+
+            precisionBonus *= (1 + 0.25*BasicBuilding.getBuildingLevel('hallOfFame'));
+            evadeBonus *= (1 + 0.25*BasicBuilding.getBuildingLevel('hallOfFame'));
+
             const qt = CreatureJobs.getWorkerAmount('fighter');
             let totMult = 1.0;
             if(BasicTemper.getCurrentTemper() === 'aggressive') {
                 totMult *= 1.1;
             }
             if(CreatureJobs.getWorkerAmount('sergeant') > 0) {
-                totMult *= 1 + CreatureJobs.getWorkerAmount('sergeant') * 0.2 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics'));
+                hpBonus *= 1 + CreatureJobs.getWorkerAmount('sergeant') * 0.2 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics'));
+                dmgBonus *= 1 + CreatureJobs.getWorkerAmount('sergeant') * 0.2 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics'));
+            }
+            if(CreatureJobs.getWorkerAmount('trainer') > 0) {
+                precisionBonus *= 1 + CreatureJobs.getWorkerAmount('trainer') * 0.1 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics'));
+                evadeBonus *= 1 + CreatureJobs.getWorkerAmount('trainer') * 0.1 * (1 + 0.1 * BasicResearch.getResearchLevel('combatTactics'));
+            }
+
+            if(ShopItems.purchased.precisionTraining) {
+                precisionBonus *= 1.5;
+            }
+
+            if(ShopItems.purchased.precisionTraining2) {
+                precisionBonus *= 1.5;
+            }
+
+            if(ShopItems.purchased.precisionTraining3) {
+                precisionBonus *= 1.5;
             }
 
             totMult *= FightParties.getWeaponsEffect();
 
+            let agilityMult = FightParties.getFlaskOfAgilityEffect();
+
+            precisionBonus *= agilityMult;
+            evadeBonus *= agilityMult;
+
+            dmgBonus *= 1 + BasicAuras.getEffect('damage');
+            hpBonus *= 1 + BasicAuras.getEffect('health');
+            precisionBonus *= 1 + BasicAuras.getEffect('accuracy');
+            evadeBonus *= 1 + BasicAuras.getEffect('evasion');
+
             return {
                 name: 'Warriors',
-                damage: 2 * dmgBonus * totMult,
-                maxHP: 5 * hpBonus * totMult,
+                damage: (2 + BasicAuras.getEffect('damageBase')) * dmgBonus * totMult,
+                maxHP: (5 + BasicResearch.getResearchLevel('resilience') + BasicAuras.getEffect('healthBase')) * hpBonus * totMult,
                 defense: BasicBuilding.getBuildingLevel('trainingCamp') * totMult,
+                armor: (1 + BasicAuras.getEffect('armorBase'))*armorBonus,
+                accuracy: (30 + BasicBuilding.getBuildingLevel('trainingCenter')*5 + BasicResearch.getResearchLevel('assassination') * 10 + BasicAuras.getEffect('accuracyBase'))*precisionBonus,
+                evasion: (20 + BasicBuilding.getBuildingLevel('trainingCenter')*4 + BasicAuras.getEffect('evasionBase'))*evadeBonus,
+                critChance: 0,
+                critMult: 2,
                 quantity: qt,
             }
         }
 
-        static generateEnemy(level, cell) {
+        static generateByPower(power, type, modifier) {
+            let dmgClassMult = 1.;
+            let armorClassMult = 1.;
+            let defClassMult = 1.;
+            let hpClassMult = 1.;
+            let acuracyClassMult = 1.;
+            let evasionClassMult = 1.;
+            let critChanceMult = 0.;
+            let critMultMult = 1.;
+            let suffix = '';
+           switch (type) {
+               case 0:
+                   // regular
+                   break;
+               case 1:
+                   // tank
+                   armorClassMult = 2.;
+                   hpClassMult = 1.25;
+                   dmgClassMult = 0.75;
+                   defClassMult = 1.25;
+                   suffix = 'Sturdy ';
+                   break;
+               case 2:
+                   // attacker
+                   armorClassMult = 1.;
+                   hpClassMult = 0.75;
+                   dmgClassMult = 1.35;
+                   suffix = 'Muscular ';
+                   break;
+               case 3:
+                   // agile
+                   armorClassMult = 0.1;
+                   dmgClassMult = 1.15;
+                   acuracyClassMult = 2.0;
+                   evasionClassMult = 2.0;
+                   defClassMult = 0.5;
+                   suffix = 'Agile ';
+                   break;
+               case 4:
+                   // precise
+                   armorClassMult = 0.1;
+                   dmgClassMult = 1.25;
+                   hpClassMult = 0.75;
+                   acuracyClassMult = 4.0;
+                   suffix = 'Precise ';
+                   critChanceMult = 0.25;
+                   critMultMult = 2.;
+                   defClassMult = 0.5;
+                   break;
+               case 5:
+                   // sniper
+                   armorClassMult = 0.1;
+                   dmgClassMult = 1.25;
+                   hpClassMult = 0.55;
+                   acuracyClassMult = 2.0;
+                   critChanceMult = 1.;
+                   critMultMult = 3.;
+                   suffix = 'Precise ';
+                   break;
+           }
             return {
                 quantity: Math.round(3 + Math.random()*2),
-                damage: 0.5*Math.pow(1.5, level + cell/100),
-                maxHP: 2 * Math.pow(1.5, level + cell/100),
-                defense: level < 11 ? 0 : 1 * Math.pow(1.5, level - 10),
-                name: 'Enemy Mock'
+                damage: 0.5*Math.pow(1.5, power)*dmgClassMult,
+                maxHP: 2 * Math.pow(1.5, power)*hpClassMult,
+                defense: power < 11 ? 0 : 1 * Math.pow(1.5, power - 10)*defClassMult,
+                armor: 0.25 * Math.pow(1.5, power) * armorClassMult,
+                accuracy: 10 * Math.pow(1.5, power) * acuracyClassMult,
+                evasion: 8 * Math.pow(1.5, power) * evasionClassMult,
+                critChance: 0.2 * critChanceMult,
+                critMult: critMultMult,
+                name: suffix + 'Skeleton'
             }
+        }
+
+        static generateEnemy(level, cell) {
+            const power = level + cell/100;
+            return FightParties.generateByPower(power, Math.floor(Math.random()*6));
+        }
+
+        static generateBossEnemy(bossLevel) {
+            if(bossesData.length <= bossLevel) return;
+            return bossesData[bossLevel];
         }
 
     }
@@ -2167,24 +3245,52 @@
             BasicFight.isInProgress = false;
         }
 
-        static start(level, cell) {
+        static reset() {
+            BasicFight.atckCooldown = BasicFight.getAtckCooldown();
+            BasicFight.isLost = false;
+            BasicFight.isWon = false;
+        }
+
+        static start(level, cell, mode) {
             BasicFight.atckCooldown = BasicFight.getAtckCooldown();
             BasicFight.isInProgress = true;
             BasicFight.isLost = false;
             BasicFight.isWon = false;
+            const me = FightParties.generateMy();
+            let enemies;
+            if(mode === 0) {
+                enemies = FightParties.generateEnemy(level, cell);
+            }
+            if(mode === 1) {
+                enemies = FightParties.generateBossEnemy(level);
+            }
+
             BasicFight.parties = {
-                me: BasicFight.prepareToFight(FightParties.generateMy()),
-                enemy: BasicFight.prepareToFight(FightParties.generateEnemy(level, cell)),
+                me: BasicFight.prepareToFight(me, enemies),
+                enemy: BasicFight.prepareToFight(enemies, me),
             };
 
         }
 
-        static prepareToFight(side) {
+        static prepareToFight(side, counterpart) {
+            if(!side) return {};
             return {
                 ...side,
                 realHP: side.maxHP * side.quantity,
                 maxRealHP: side.maxHP * side.quantity,
+                chanceToHit: BasicFight.calculateHitChance(side.accuracy, counterpart?.evasion),
+                chanceToEvade: 1 - BasicFight.calculateHitChance(counterpart?.accuracy, side.evasion),
+                dmgMitigation: BasicFight.calculateDamagePercentage(counterpart?.damage, side.armor),
+                hitStatus: '',
             }
+        }
+
+        static calculateDamagePercentage(dmg, armor) {
+            return dmg / (dmg + armor);
+        }
+
+        static calculateHitChance(precision, evasion) {
+            return precision / (precision + evasion);
         }
 
         static process(dT) {
@@ -2207,16 +3313,41 @@
             if(BasicFight.atckCooldown <= 0) {
                 BasicFight.atckCooldown = BasicFight.getAtckCooldown();
 
-                // attacking
-                BasicFight.parties.me.realHP -= Math.max(0, BasicFight.parties.enemy.damage - BasicFight.parties.me.defense)
-                    * BasicFight.parties.enemy.quantity;
+                // defending
+                if(Math.random() < BasicFight.parties.enemy.chanceToHit) {
+                    const isCrit = Math.random() < BasicFight.parties.enemy.critChance;
+                    let dmg = BasicFight.parties.enemy.damage;
+                    BasicFight.parties.enemy.hitStatus = 'Hit';
+                    if(isCrit) {
+                        dmg *= BasicFight.parties.enemy.critMult;
+                        BasicFight.parties.enemy.hitStatus = 'Crit!';
+                    }
+                    BasicFight.parties.me.realHP -= Math.max(0, dmg * BasicFight.calculateDamagePercentage(dmg, BasicFight.parties.me.armor) - BasicFight.parties.me.defense)
+                        * BasicFight.parties.enemy.quantity;
+                    BasicFight.parties.me.realHP = Math.max(BasicFight.parties.me.realHP, 0);
+                } else {
+                    BasicFight.parties.enemy.hitStatus = 'Miss';
+                }
 
                 BasicFight.parties.me.quantity = Math.ceil(BasicFight.parties.me.realHP / BasicFight.parties.me.maxHP);
 
-                // defending
-                BasicFight.parties.enemy.realHP -= Math.max(0, BasicFight.parties.me.damage - BasicFight.parties.enemy.defense)
-                    * BasicFight.parties.me.quantity;
+                // attacking
+                if(Math.random() < BasicFight.parties.me.chanceToHit) {
+                    const isCrit = Math.random() < BasicFight.parties.me.critChance;
+                    let dmg = BasicFight.parties.me.damage;
+                    BasicFight.parties.me.hitStatus = 'Hit';
+                    if(isCrit) {
+                        dmg *= BasicFight.parties.me.critMult;
+                        BasicFight.parties.me.hitStatus = 'Crit!';
+                    }
+                    BasicFight.parties.enemy.realHP -= Math.max(0, dmg * BasicFight.calculateDamagePercentage(dmg, BasicFight.parties.enemy.armor) - BasicFight.parties.enemy.defense)
+                        * BasicFight.parties.me.quantity;
 
+                    BasicFight.parties.enemy.realHP = Math.max(0, BasicFight.parties.enemy.realHP);
+
+                } else {
+                    BasicFight.parties.me.hitStatus = 'Miss';
+                }
                 BasicFight.parties.enemy.quantity = Math.ceil(BasicFight.parties.enemy.realHP / BasicFight.parties.enemy.maxHP);
 
             }
@@ -2273,6 +3404,18 @@
         isUnlocked: () => true,
         base: 0.01,
         getText: (amount) => `+${fmtVal(amount*100)}% to creatures HP`
+    },{
+        id: 'precision',
+        name: 'precision',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to fighters precision`
+    },{
+        id: 'evasion',
+        name: 'evasion',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to fighters evasion`
     },{
         id: 'creation',
         name: 'creation',
@@ -2352,6 +3495,84 @@
 
     }
 
+    class AurasGenerator {
+
+        static generateAuraStats(quality, tier) {
+            const bonuses = [];
+            Array.from({ length: tier+1 }).forEach(() => {
+                const available = auraData.filter(one => one.isUnlocked() && !bonuses.some(bonus => bonus.name === one.name));
+                const index = Math.floor(Math.random()*available.length);
+                const effect = available[index];
+                const baseEff = quality * effect.baseEffect;
+                bonuses.push({
+                    id: effect.id,
+                    name: effect.name,
+                    weight: effect.weight,
+                    baseEff,
+                    baseGrowth: effect.baseGrowth,
+                    expBase: effect.expBase || 1.0,
+                });
+            });
+            return bonuses;
+        }
+
+        static generateSuffix(bonuses) {
+            let b = [...bonuses];
+            const trailing = b.pop();
+            if(!b.length) return trailing.name;
+            return `${b.map(({ name }) => name).join(', ')} and ${trailing.name}`;
+        }
+
+        static generatePreffix(tier) {
+            switch (tier) {
+                case 0:
+                    return 'Normal ';
+                case 1:
+                    return 'Empowered ';
+                case 2:
+                    return 'Rare ';
+                case 3:
+                    return 'Epic ';
+                case 4:
+                    return 'Legendary ';
+            }
+        }
+
+        static generateAura(quality, tier) {
+            const bonuses = AurasGenerator.generateAuraStats(quality, tier);
+            const name = `${AurasGenerator.generatePreffix(tier)} aura of ${AurasGenerator.generateSuffix(bonuses)}`;
+            return {
+                quality,
+                tier,
+                name,
+                bonuses,
+                level: 0,
+                xp: 0,
+            }
+        }
+
+        static generateProbabilityBased(prob) {
+            const rn = Math.random();
+            if(rn < prob) {
+                const tierProb = Math.random();
+                let tr = 0;
+                if(tierProb < 0.8) {
+                    tr = 0;
+                } else if(tierProb < 0.95) {
+                    tr = 1;
+                } else if(tierProb < 0.992) {
+                    tr = 2;
+                } else {
+                    tr = 3;
+                }
+                const aura = AurasGenerator.generateAura(0.5 + Math.random(), tr);
+                return aura;
+            }
+            return null;
+        }
+
+    }
+
     class BasicMap {
 
         static state = {
@@ -2361,9 +3582,15 @@
             isTurnedOn: false,
             zonesAmounts: {},
             maxLevel: 0,
+            reviveCoolDown: 0,
+            fightMode: 0,
+            bossesArena: {
+                level: 0,
+                maxBossLevel: 0,
+            }
         }
 
-        static initialize() {
+        static initialize(isFromPrestige) {
             BasicMap.state = {
                 level: 0,
                 cell: 0,
@@ -2371,12 +3598,23 @@
                 isTurnedOn: false,
                 zonesAmounts: {},
                 maxLevel: 5 * BasicBuilding.getBuildingLevel('zeusStatue'),
+                fightMode: 0,
+                bossesArena: {
+                    level: 0,
+                    maxBossLevel: isFromPrestige ? BasicMap.state?.bossesArena?.maxBossLevel || 0 : 0,
+                },
             };
             return BasicMap.state;
         }
 
         static switchTurned() {
             BasicMap.state.isTurnedOn = !BasicMap.state.isTurnedOn;
+
+            if(!BasicMap.state.isTurnedOn) {
+                BasicFight.isInProgress = false;
+                BasicMap.state.isTurnedOn = false;
+                BasicFight.parties = {};
+            }
         }
 
         static setLevel(level) {
@@ -2414,56 +3652,116 @@
             if(qt <= 0) {
                 BasicMap.state.isTurnedOn = false;
             }
+            if(BasicMap.state.reviveCoolDown > 0) {
+                BasicMap.state.reviveCoolDown -= dT;
+                return;
+            }
+            if(!BasicMap.state.fightMode) {
+                BasicMap.state.fightMode = 0;
+            }
             if(BasicMap.state.isTurnedOn) {
                 if(!BasicFight.isInProgress) {
                     // start fight
-                    BasicFight.start(BasicMap.state.level, BasicMap.state.cell);
+                    if(BasicMap.state.fightMode === 1) {
+                        BasicFight.start(BasicMap.state.bossesArena.level || 0, null, 1);
+                    } else {
+                        BasicFight.start(BasicMap.state.level, BasicMap.state.cell, 0);
+                    }
                 }
                 BasicFight.process(dT);
-                if(BasicFight.isWon) {
-                    BasicFight.isInProgress = false;
-                    const soulsGained = Math.pow(BasicMap.state.level+1, 0.5) * Math.pow(1.3, (BasicMap.state.level+1) + 0.01 *  BasicMap.state.cell)
-                        * (1 + 0.1 * BasicResearch.getResearchLevel('soulEater'))
-                        * getResourceMult('souls')
-                        * (1 + 0.25 * BasicResearch.getResearchLevel('looting'));
-                    BasicResources.add('souls',
-                        soulsGained
-                    );
-                    if(BasicSettings.settings.notificationsSettings.whenBattleWon) {
-                        // console.log('spawn_notification');
-                        ColibriWorker.sendToClient('spawn_notification', {
-                            message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You received ${fmtVal(soulsGained)} souls.`
-                        });
-                    }
-                    if(BasicMap.state.level > 4) {
-                        const hr = HeirloomGenerator.generateProbabilityBased(BasicMap.state.level, 0.005);
-                        if(hr) {
-                            BasicHeirlooms.giveToPlayer(hr);
-                            console.log('AWARDED HEIRLOOM: ', hr);
-                        }
-                    }
-                    BasicMap.state.cell++;
-                    if(BasicMap.state.cell > 100) {
-                        if(BasicSettings.settings.notificationsSettings.whenZoneFinished) {
+                if(BasicMap.state.fightMode === 0) {
+                    if(BasicFight.isWon) {
+                        BasicFight.isInProgress = false;
+                        const soulsGained = Math.pow(BasicMap.state.level+1, 0.5) * Math.pow(1.3, (BasicMap.state.level+1) + 0.01 *  BasicMap.state.cell)
+                            * (1 + 0.1 * BasicResearch.getResearchLevel('soulEater'))
+                            * getResourceMult('souls')
+                            * (1 + 0.25 * BasicResearch.getResearchLevel('looting'));
+                        BasicResources.add('souls',
+                            soulsGained
+                        );
+                        if(BasicSettings.settings.notificationsSettings.whenBattleWon) {
+                            // console.log('spawn_notification');
                             ColibriWorker.sendToClient('spawn_notification', {
-                                message: `You finished map ${BasicMap.state.level}. You received ${fmtVal(territotyPerZone(BasicMap.state.level))} territory.`
+                                message: `You won the battle at ${BasicMap.state.level}:${BasicMap.state.cell}. You received ${fmtVal(soulsGained)} souls.`
                             });
                         }
-                        BasicMap.finishZone();
+                        if(BasicMap.state.level > 4) {
+                            const hr = HeirloomGenerator.generateProbabilityBased(BasicMap.state.level, 0.005);
+                            if(hr) {
+                                BasicHeirlooms.giveToPlayer(hr);
+                                console.log('AWARDED HEIRLOOM: ', hr);
+                            }
+                        }
+                        if(BasicResearch.getResearchLevel('auras') > 0 && BasicMap.state.level > -1) {
+                            // TODO: change probability
+                            const aura = AurasGenerator.generateProbabilityBased(0.003);
+                            if(aura) {
+                                BasicAuras.giveToPlayer(aura);
+                                console.log('AWARDED AURA: ', aura);
+                            }
+                        }
+                        BasicMap.state.cell++;
+                        if(BasicMap.state.cell > 100) {
+                            if(BasicSettings.settings.notificationsSettings.whenZoneFinished) {
+                                ColibriWorker.sendToClient('spawn_notification', {
+                                    message: `You finished map ${BasicMap.state.level}. You received ${fmtVal(territotyPerZone(BasicMap.state.level))} territory.`
+                                });
+                            }
+                            BasicMap.finishZone();
+                        }
+                    }
+                    if(BasicFight.isLost) {
+                        console.log('you lost');
+                        BasicFight.isInProgress = false;
+                        if(BasicSettings.settings.notificationsSettings.whenBattleLost) {
+                            ColibriWorker.sendToClient('spawn_notification', {
+                                message: `You lost the battle at ${BasicMap.state.level}:${BasicMap.state.cell}.`,
+                                color: '#da3842',
+                            });
+                        }
+                        BasicMap.state.reviveCoolDown = 60;
+
+                        BasicMap.startZone();
                     }
                 }
-                if(BasicFight.isLost) {
-                    console.log('you lost');
-                    BasicFight.isInProgress = false;
-                    if(BasicSettings.settings.notificationsSettings.whenBattleLost) {
-                        ColibriWorker.sendToClient('spawn_notification', {
-                            message: `You lost the battle at ${BasicMap.state.level}:${BasicMap.state.cell}.`,
-                            color: '#da3842',
-                        });
+                if(BasicMap.state.fightMode === 1) {
+                    if(BasicFight.isWon) {
+                        BasicResources.add('fame', 0.5*Math.pow(1.2,BasicMap.state.bossesArena?.level || 0));
+                        BasicMap.state.bossesArena.level++;
+                        BasicMap.state.bossesArena.maxBossLevel = BasicMap.state.bossesArena.level;
+                        BasicFight.isInProgress = false;
+                        BasicMap.state.isTurnedOn = false;
+                        BasicFight.parties = {};
                     }
-                    BasicMap.startZone();
+                    if(BasicFight.isLost) {
+                        BasicFight.isInProgress = false;
+                        BasicMap.state.isTurnedOn = false;
+                        BasicFight.parties = {};
+                        if(BasicSettings.settings.notificationsSettings.whenBattleLost) {
+                            ColibriWorker.sendToClient('spawn_notification', {
+                                message: `You lost the battle at boss level ${BasicMap.state.bossesArena.level}.`,
+                                color: '#da3842',
+                            });
+                        }
+                    }
                 }
+
             }
+        }
+
+        static toggleMode(fightMode) {
+            if(fightMode == BasicMap.state.fightMode) return;
+            if(!BasicMap.state.bossesArena) {
+                BasicMap.state.bossesArena = {
+                    level: 0,
+                    maxBossLevel: 0
+                };
+            }
+
+            BasicMap.state.fightMode = fightMode;
+            BasicMap.state.isTurnedOn = false;
+            // to prevent cheating
+            BasicFight.isInProgress = false;
         }
 
         static sendToUI() {
@@ -2473,7 +3771,10 @@
             ColibriWorker.sendToClient('set_map_state', {
                 ...BasicMap.state,
                 isFightAvailable: CreatureJobs.getWorkerAmount('fighter') > 0,
-                territoryPerMap: territotyPerZone(BasicMap.state.level)
+                territoryPerMap: territotyPerZone(BasicMap.state.level),
+                coolDown: BasicMap.state.reviveCoolDown > 0 ? secondsToHms(BasicMap.state.reviveCoolDown) : null,
+                bossPreview: BasicFight.prepareToFight(FightParties.generateBossEnemy(BasicMap.state.bossesArena?.level || 0)),
+                myPreview: BasicFight.prepareToFight(FightParties.generateMy()),
             });
         }
 
@@ -2556,11 +3857,20 @@
     },{
         id: 'fighting',
         name: 'Fighting Masterity',
-        description: 'Unlocks fighting. Each level increase your creatures HP and attack by 25%. Levels 2 and 6 unlock new researches',
+        description: 'Unlocks fighting. Each level increase your creatures HP and attack by 25%. Levels 3 and 6 unlock new researches',
         isUnlocked: () => BasicResearch.getTotal('necromancery') > 2,
         maxLevel: 0,
         getCost: (level) => ({
             research: 10000*Math.pow(3, level),
+        }),
+    },{
+        id: 'combatReflexes',
+        name: 'Combat Reflexes',
+        description: 'Increase your creatures evasion and accuracy by 25%. After level 10 unlocks new research.',
+        isUnlocked: () => BasicResearch.getTotal('fighting') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 50000*Math.pow(3, level),
         }),
     },{
         id: 'building',
@@ -2611,7 +3921,7 @@
     }*/,{
         id: 'combatTactics',
         name: 'Combat Tactics',
-        description: 'Unlocks hiring sergeant. Each level increase sergeant bonus by 10%',
+        description: 'Unlocks hiring sergeant and trainer. Each level increase sergeant and trainer bonus by 10%. Level 3 unlocks new research.',
         isUnlocked: () => BasicResearch.getTotal('fighting') > 5,
         maxLevel: 20,
         getCost: (level) => ({
@@ -2636,9 +3946,18 @@
             research: 10000000*Math.pow(3, level),
         }),
     },{
+        id: 'resilience',
+        name: 'Resilience',
+        description: 'New training techniques for your warriors allows to increase their vitality. +1 base HP to your creatures per level. (multiplied by other bonuses)',
+        isUnlocked: () => BasicResearch.getTotal('combatTactics') > 2,
+        maxLevel: 10,
+        getCost: (level) => ({
+            research: 1.e+8*Math.pow(3, level),
+        }),
+    },{
         id: 'looting',
         name: 'Looting',
-        description: 'Increase fighting loot by 25%.',
+        description: 'Increase fighting loot by 25%. Level 5 unlocks new research',
         isUnlocked: () => BasicResearch.getTotal('combatLogistics') > 2,
         maxLevel: 0,
         getCost: (level) => ({
@@ -2681,6 +4000,15 @@
             research: 1.e+9*Math.pow(3, level),
         }),
     },{
+        id: 'assassination',
+        name: 'Talented Assassins',
+        description: 'Increase your base accuracy by 10',
+        isUnlocked: () => BasicResearch.getTotal('combatReflexes') > 9,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+9*Math.pow(3, level),
+        }),
+    },{
         id: 'urbanism',
         name: 'Urbanism',
         description: 'Each level add +1 building queue slot',
@@ -2706,6 +4034,33 @@
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+10*Math.pow(3, level),
+        }),
+    },{
+        id: 'alchemy',
+        name: 'Alchemy',
+        description: 'Unlock alchemists job. Can convert your flasks to something more efficient. Each level improves alchemist efficiency by 10%',
+        isUnlocked: () => BasicResearch.getTotal('motivation') > 2,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+10*Math.pow(3, level),
+        }),
+    },{
+        id: 'auras',
+        name: 'Auras',
+        description: 'Unlock new way of your power improvement - auras. Can be find in maps. Each level add new active aura slot',
+        isUnlocked: () => BasicResearch.getTotal('looting') > 4,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+12*Math.pow(1000, level*level),
+        }),
+    },{
+        id: 'levitation',
+        name: 'Levitation',
+        description: 'Learn how to move large things with power of mind. Unlocks new megastructures. Each level decrease building time by 5%',
+        isUnlocked: () => BasicResearch.getTotal('architecture') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+12*Math.pow(1000, level*level),
         }),
     }];
 
@@ -3696,6 +5051,7 @@
                 const currState = BasicActions.actions[action.id] || {
                     performed: 0,
                     cooldown: 0,
+                    efficiency: 1,
                 };
                 const cost = BasicResources.checkResourcesAvailable(action.getCost());
                 return {
@@ -3715,19 +5071,27 @@
             })
         }
 
-        static getBalanceById(resourceId) {
+        static getBalanceByAction(resourceId, actionId, bIgnoreEfficiency = false) {
+            let bal = 0;
+            if(!BasicActions.actions[actionId]) return 0;
+            if(!BasicActions.actions[actionId].isAutomated) return 0;
+            const action = actionsData.find(one => one.id === actionId);
+            const cost = action.getCost();
+            const profit = action.getGain();
+            if(profit && profit[resourceId]) {
+                bal += profit[resourceId] * BasicActions.getActionsEfficiency() * (bIgnoreEfficiency ? 1 : BasicActions.actions[actionId].efficiency) / action.getCooldown();
+            }
+            if(cost && cost[resourceId]) {
+                bal -= cost[resourceId] * BasicActions.getActionsEfficiency() * (bIgnoreEfficiency ? 1 : BasicActions.actions[actionId].efficiency) / action.getCooldown();
+            }
+            return bal;
+        }
+
+        static getBalanceById(resourceId, bIgnoreEfficiency) {
             let bal = 0;
             Object.entries(BasicActions.actions).forEach(([id, data]) => {
                 if(!data.isAutomated) return;
-                const action = actionsData.find(one => one.id === id);
-                const cost = action.getCost();
-                const profit = action.getGain();
-                if(profit && profit[resourceId]) {
-                    bal += profit[resourceId] * BasicActions.getActionsEfficiency() / action.getCooldown();
-                }
-                if(cost && cost[resourceId]) {
-                    bal -= cost[resourceId] * BasicActions.getActionsEfficiency() / action.getCooldown();
-                }
+                bal += BasicActions.getBalanceByAction(resourceId, id, bIgnoreEfficiency);
             });
             return bal;
         }
@@ -3801,6 +5165,15 @@
                 if(BasicActions.actions[key].isAutomated) {
                     const action = actionsData.find(one => one.id === key);
                     const cost = BasicResources.checkResourcesAvailable(action.getCost());
+                    // calculate efficiency for avg balance
+                    let efficiency = 1;
+
+                    Object.entries(action.getCost()).forEach(([resId, cost]) => {
+                        efficiency = Math.min(efficiency, BasicResources.efficiencies[resId]?.efficiency || 1);
+                    });
+                    // actually efficiency here is real cooldown divided by resources collection time
+
+                    BasicActions.actions[key].efficiency = efficiency;
                     if(BasicActions.actions[key].cooldown <= 0 && cost.isAvailable) {
                         BasicActions.performAction(key);
                     }
@@ -3823,20 +5196,23 @@
             let amt = (20 + 20 * (ShopItems.purchased.pocket || 0)
                 + 50 * BasicResearch.getResearchLevel('economy')
                 + getExpansionEffect()* (BasicActions.actions.expansionSpell?.performed || 0)
-                + 200 * (ShopItems.purchased.stash || 0)) * (
+                + 200 * (ShopItems.purchased.stash || 0)
+                + BasicAuras.getEffect('goldMaxBase')
+            ) * (
                 1 + 0.1 * BasicBuilding.getBuildingLevel('palace')
             ) * (
                 1 + 0.1 * BasicBuilding.getBuildingLevel('bank')
             ) * (
                 1 + 0.2 * BasicResearch.getResearchLevel('banking')
-            );
+            ) * ( 1 + BasicAuras.getEffect('goldMax'));
             if(BasicTemper.getCurrentTemper() === 'saving') {
                 amt = amt * 1.25 + 50;
             }
             amt *= (1 + BasicHeirlooms.getTotalBonus('saving'));
+            amt *= (1 + 0.5*BasicBuilding.getBuildingLevel('greatTreasury'));
             return amt;
         },
-        getIncome: () => Math.pow(BasicResearch.getResearchLevel('economy'), 1.5),
+        getIncome: () => Math.pow(BasicResearch.getResearchLevel('economy'), 1.5) + BasicAuras.getEffect('goldBase'),
         getAggregatedIncome: () => {
         }
     },{
@@ -3845,11 +5221,14 @@
         isUnlocked: () => true,
         getMax: () => {
             let amt = 10 + getEnergyOrbEffect()
-            * (BasicActions.actions.energyOrb?.performed || 0) + 5 * BasicResearch.getResearchLevel('energizer');
+            * (BasicActions.actions.energyOrb?.performed || 0)
+                + 5 * BasicResearch.getResearchLevel('energizer')
+                + BasicAuras.getEffect('energyMaxBase');
             if(BasicTemper.getCurrentTemper() === 'energetic') {
                 amt = amt * 1.25 + 20;
             }
             amt *= (1 + BasicHeirlooms.getTotalBonus('energy'));
+            amt *= (1 + BasicAuras.getEffect('energyMax'));
             return amt;
         },
         getIncome: () =>
@@ -3857,6 +5236,7 @@
             * (BasicActions.actions.physicalTraining?.performed || 0) * BasicBanners.getBonus('green')
             * Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
             + 0.5 * Math.pow(BasicResearch.getResearchLevel('energizer'),1.5)
+            + BasicAuras.getEffect('energyBase')
     },{
         id: 'mana',
         name: 'Mana',
@@ -3865,25 +5245,27 @@
             let amt = 10 + 10 * (ShopItems.purchased.magicStamp || 0)
             + 4*(BasicActions.actions.magicLessons?.performed || 0)
             * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
-            * BasicBanners.getBonus('green');
+            * BasicBanners.getBonus('green')
+            + BasicAuras.getEffect('manaMaxBase');
             if(BasicTemper.getCurrentTemper() === 'spiritual') {
                 amt = 1.25*amt + 10;
             }
             amt *= (1 + BasicHeirlooms.getTotalBonus('magic'));
+            amt *= (1 + BasicAuras.getEffect('manaMax'));
             return amt;
         },
-        getIncome: () => 0,
+        getIncome: () => BasicAuras.getEffect('manaBase'),
     },{
         id: 'souls',
         name: 'Souls',
         isUnlocked: () => !!ShopItems.purchased.summoning,
         getMax: () => 0,
-        getIncome: () => 0,
+        getIncome: () => BasicAuras.getEffect('soulsBase'),
     },{
         id: 'herbs',
         name: 'Herbs',
         isUnlocked: () => !!ShopItems.purchased.herbalism,
-        getMax: () => 10 + (ShopItems.purchased.herbalistsStash ? 20 : 0),
+        getMax: () => (10 + (ShopItems.purchased.herbalistsStash ? 20 : 0) + BasicAuras.getEffect('herbsMaxBase'))*(1 +  BasicAuras.getEffect('herbsMax')),
         getIncome: () => 0,
     },{
         id: 'flasks',
@@ -3907,9 +5289,10 @@
         id: 'wood',
         name: 'Wood',
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
-        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse') * (
-            1 + 0.2 * BasicResearch.getResearchLevel('logistics')
-        ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0)),
+        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse')
+            * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
+            * (1 + 0.2 * BasicResearch.getResearchLevel('logistics'))
+            * (1 + BasicAuras.getEffect('woodMax')),
         getIncome: () => 0,
     },{
         id: 'stone',
@@ -3917,7 +5300,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse') * (
             1 + 0.2 * BasicResearch.getResearchLevel('logistics')
-        ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0)),
+        ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
+            * (1 + BasicAuras.getEffect('stoneMax')),
         getIncome: () => 0,
     },{
         id: 'ore',
@@ -3925,7 +5309,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('mine') > 0,
         getMax: () => 2 * BasicBuilding.getBuildingLevel('warehouse') * (
             1 + 0.2 * BasicResearch.getResearchLevel('logistics')
-        ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0)),
+        ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
+            * (1 + BasicAuras.getEffect('oreMax')),
         getIncome: () => 0,
     },{
         id: 'tools',
@@ -3937,6 +5322,18 @@
         id: 'weapons',
         name: 'Weapons',
         isUnlocked: () => BasicBuilding.getBuildingLevel('forge') > 0,
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'fame',
+        name: 'Fame',
+        isUnlocked: () => BasicMap.state.bossesArena && BasicMap.state.bossesArena.level > 0,
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'flasksOfAgility',
+        name: 'Flasks of agility',
+        isUnlocked: () => BasicResearch.getResearchLevel('alchemy'),
         getMax: () => 0,
         getIncome: () => 0,
     }
@@ -3953,6 +5350,8 @@
     class BasicResources {
 
         static resources = {};
+
+        static efficiencies = {};
 
         static resourcesMax = {};
 
@@ -3977,7 +5376,7 @@
 
         static subtract(key, amount) {
             if(!BasicResources.resources[key]) {
-                BasicResources.resources[key] = 0;
+                BasicResources.resources[key] = -amount;
                 return;
             }
             BasicResources.resources[key] -= amount;
@@ -4062,7 +5461,7 @@
             if(!BasicResources.resourcesMax[id]) {
                 return BasicResources.resources[id];
             }
-            return Math.min(BasicResources.resources[id], BasicResources.resourcesMax[id]);
+            return Math.max(0,Math.min(BasicResources.resources[id], BasicResources.resourcesMax[id]));
         }
 
         static getBalance(one, newState = {}) {
@@ -4071,6 +5470,54 @@
             + CreatureJobs.getBalanceById(one.id, newState?.creatureJobs)
             + BasicSkills.getBalanceById(one.id, newState?.learning)
             + BasicActions.getBalanceById(one.id)
+            + BasicAuras.getBalanceById(one.id, newState?.auras)
+        }
+
+        // get missing percentages to calculate efficiencies for future
+        static preRun(dT) {
+            const balResult = {};
+            resourcesData.forEach(res => {
+                const nonMitigatableBalance = res.getIncome()
+                    + CreatureBasic.getBalanceById(res.id);
+
+                const creaturesBalance = CreatureJobs.getBalanceById(res.id, undefined, true);
+
+                const skillBalance = BasicSkills.getBalanceById(res.id, undefined, true);
+
+                const actionsBalance =  BasicActions.getBalanceById(res.id, true);
+
+                let mitigatableBalance = creaturesBalance + skillBalance;
+
+                const balanceWOutActions = nonMitigatableBalance + mitigatableBalance;
+
+                mitigatableBalance += actionsBalance;
+
+                let mitiToDump = 0;
+                if(skillBalance < 0) {
+                    mitiToDump += skillBalance;
+                }
+                if(creaturesBalance < 0) {
+                    mitiToDump += creaturesBalance;
+                }
+                /*if(actionsBalance < 0) {
+                    mitiToDump += actionsBalance;
+                }*/
+
+                balResult[res.id] = {
+                    current: BasicResources.resources[res.id],
+                    potentialInMax: BasicResources.resources[res.id] + nonMitigatableBalance + mitigatableBalance,
+                    balanceWOutActions,
+                    efficiency: 1,
+                    mitigatableBalance,
+                    nonMitigatableBalance,
+                };
+                if(balResult[res.id].potentialInMax < 0) {
+                    balResult[res.id].efficiency = Math.max(0, Math.min(1,
+                            -(balResult[res.id].current + nonMitigatableBalance + mitigatableBalance - mitiToDump) / mitiToDump
+                        ));
+                }
+            });
+            BasicResources.efficiencies = balResult;
         }
 
         static getBalanceDifferences(potentialState, delta = 1.0) {
@@ -4132,21 +5579,28 @@
                 let amount = BasicResources.resources[one.id] || 0;
                 let income = 0;
                 let incomeText = 0;
+                let bonus = 0;
+                let bonusText = 0;
                 if(one.id === 'flasks') {
-                    income = BasicResources.getFlasksEffect();
-                    incomeText = `X${fmtVal(income)} boost`;
+                    bonus = BasicResources.getFlasksEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
                 } else
                 if(one.id === 'tools') {
-                    income = BasicResources.getToolsEffect();
-                    incomeText = `X${fmtVal(income)} boost`;
+                    bonus = BasicResources.getToolsEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
                 } else
                 if(one.id === 'weapons') {
-                    income = FightParties.getWeaponsEffect();
-                    incomeText = `X${fmtVal(income)} boost`;
-                } else {
-                    income = BasicResources.getBalance(one);
-                    incomeText = fmtVal(income);
+                    bonus = FightParties.getWeaponsEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
+                } else
+                if(one.id === 'flasksOfAgility') {
+                    bonus = FightParties.getFlaskOfAgilityEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
                 }
+
+                income = BasicResources.getBalance(one);
+                incomeText = fmtVal(income);
+
                 if(one.id === 'territory') {
                     amount = BasicBuilding.getUsedTerritoryCached() || 0;
                 }
@@ -4157,6 +5611,8 @@
                     max: one.getMax(),
                     income,
                     incomeText,
+                    bonus,
+                    bonusText,
                     amount
                 }
             }));
@@ -4183,7 +5639,7 @@
             ShopItems.initialize(isBannerPrestige);
             CreatureBasic.initialize(isBannerPrestige);
             CreatureJobs.initialize(isBannerPrestige);
-            BasicMap.initialize();
+            BasicMap.initialize(isBannerPrestige);
             BasicFight.initialize();
             BasicBuilding.initialize(isBannerPrestige);
             BasicHeirlooms.initialize(isBannerPrestige);
@@ -4206,8 +5662,8 @@
                 BasicResources.resources.condensedTime -= dt;
                 dT = 2 * dt;
             }
+            BasicResources.preRun(dT);
             BasicResources.process(dT);
-            BasicActions.process(dT);
             CreatureJobs.process(dT);
             CreatureBasic.process(dT);
             BasicSkills.process(dT);
@@ -4217,6 +5673,9 @@
             BasicBuilding.process(dT);
             BasicTemper.process();
             ShopItems.process(dT);
+            BasicAuras.process(dT);
+            BasicActions.process(dT);
+            CreatureBasic.postProcess(dT);
 
             BasicResources.postProcess(dT);
             BasicRun.timeSpent += dT;
@@ -4227,6 +5686,7 @@
                 battleUnlocked: BasicResearch.getResearchLevel('fighting') > 0,
                 buildingUnlocked: BasicResearch.getResearchLevel('building') > 0,
                 heirloomsUnlocked: BasicHeirlooms.heirloomsUnlocked(),
+                aurasUnlocked: BasicAuras.aurasUnlocked(),
                 story: BasicStory.getCurrentToShow(),
                 temper: BasicTemper.state,
                 autopurchaseUnlocked: BasicResearch.getResearchLevel('advancedAutomation') > 0,
@@ -4274,7 +5734,7 @@
                 temper: BasicTemper.state || {},
                 settings: BasicSettings.settings || {},
                 heirlooms: BasicHeirlooms.state,
-
+                auras: BasicAuras.state || {},
                 lastSave: Date.now(),
             };
             console.log('saving: ', saveObject);
@@ -4314,6 +5774,7 @@
             BasicTemper.state = save.temper || BasicTemper.initialize();
             BasicSettings.settings = save.settings || BasicSettings.initialize();
             BasicHeirlooms.state = save.heirlooms || BasicHeirlooms.initialize();
+            BasicAuras.state = save.auras || BasicAuras.initialize();
             const now = Date.now();
             if(save.lastSave && now - save.lastSave > 30000) {
                 const gain = (now - save.lastSave - 10000) / 1000;
@@ -4412,6 +5873,10 @@
         BasicSettings.sendToUI();
     });
 
+    ColibriWorker.on('get_auras_tab', () => {
+        BasicAuras.sendToUI();
+    });
+
     ColibriWorker.on('do_action', (id) => {
         BasicActions.performAction(id);
     });
@@ -4486,6 +5951,12 @@
         BasicMap.switchTurned();
     });
 
+
+    ColibriWorker.on('toggle_battle_mode', ({ fightMode }) => {
+        console.log('toggle_battle_mode', fightMode);
+        BasicMap.toggleMode(fightMode);
+    });
+
     ColibriWorker.on('toggle_forward', () => {
         BasicMap.switchForward();
     });
@@ -4500,6 +5971,10 @@
 
     ColibriWorker.on('drop_heirloom', ({ fromKey, fromIndex }) => {
         BasicHeirlooms.dropItem(fromKey, fromIndex);
+    });
+
+    ColibriWorker.on('change_heirloom_mintier', ({ tierId }) => {
+        BasicHeirlooms.setMinTier(tierId);
     });
 
     ColibriWorker.on('set_amount', ({ amount }) => {
@@ -4525,6 +6000,22 @@
 
     ColibriWorker.on('cancel_build', ({ index }) => {
         BasicBuilding.cancelBuilding(index);
+    });
+
+    ColibriWorker.on('toggle_aura', ({ index }) => {
+        BasicAuras.toggleActivate(index);
+    });
+
+    ColibriWorker.on('drop_aura', ({ index }) => {
+        BasicAuras.dropAura(index);
+    });
+
+    ColibriWorker.on('change_aura_effort', ({ index, effort }) => {
+        BasicAuras.setEffort(index, effort);
+    });
+
+    ColibriWorker.on('change_aura_mintier', ({ tierId }) => {
+        BasicAuras.setMinTier(tierId);
     });
 
 }));
