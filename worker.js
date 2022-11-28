@@ -508,9 +508,29 @@
                     },
                     isUseCondensedTime: false,
                 };
+
+                BasicSettings.initResourcesSettings();
             }
 
             return BasicSettings.settings;
+        }
+
+        static initResourcesSettings() {
+            BasicSettings.settings.resourcesDisplay = {
+                gold: 1,
+                energy: 1,
+                mana: 1,
+                souls: 1,
+                herbs: 1,
+                flasks: 1,
+                research: 1,
+                territory: 1,
+                wood: 1,
+                stone: 1,
+                ore: 1,
+                condensedTime: 1,
+            };
+            return BasicSettings.settings.resourcesDisplay;
         }
 
         static updateSetting(path, value) {
@@ -850,6 +870,7 @@
         getCost: (level) => ({
             gold: 1.e+5 * Math.pow(2, level) * buildingCostModifier('gold'),
         }),
+        getEmbedMemoryCost: (amount) => 2*Math.pow(2, amount),
         category: 'Economy',
     },{
         id: 'warehouse',
@@ -861,6 +882,7 @@
         getCost: (level) => ({
             gold: 2.e+5 * Math.pow(2, level) * buildingCostModifier('gold'),
         }),
+        getEmbedMemoryCost: (amount) => 4*Math.pow(2, amount),
         category: 'Economy',
     },{
         id: 'graveyard',
@@ -874,6 +896,7 @@
             wood: 10 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Economy',
     },{
         id: 'trainingCamp',
@@ -887,6 +910,7 @@
             wood: 20 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Military',
     },{
         id: 'trainingCenter',
@@ -900,6 +924,7 @@
             wood: 160 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Military',
     },{
         id: 'academy',
@@ -913,6 +938,7 @@
             wood: 40 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Research',
     },{
         id: 'bank',
@@ -926,6 +952,7 @@
             wood: 40 * Math.pow(2, level),
             stone: 20 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Economy',
     }, {
         id: 'monument',
@@ -938,6 +965,7 @@
             gold: 1.e+5 * Math.pow(2, level) * buildingCostModifier('gold'),
             stone: 100 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 20*Math.pow(2, amount),
         category: 'Development',
     }, {
         id: 'watchTower',
@@ -951,6 +979,7 @@
             wood: 1200 * Math.pow(2, level),
             stone: 360 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 20*Math.pow(2, amount),
         category: 'Military',
     }, {
         id: 'mine',
@@ -964,6 +993,7 @@
             wood: 400 * Math.pow(2, level),
             stone: 200 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
         category: 'Economy',
     }, {
         id: 'forge',
@@ -978,6 +1008,22 @@
             stone: 3200 * Math.pow(2, level),
             ore: 800 * Math.pow(2, level),
         }),
+        getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
+        category: 'Economy',
+    }, {
+        id: 'herbsGarden',
+        name: 'Herbs garden',
+        description: 'Improves your herbs and flasks output by 10%',
+        getConstructionAmount: (level) => 220000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 10 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicResearch.getResearchLevel('herbalism'),
+        getCost: (level) => ({
+            gold: 1.e+7 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 4.e+6 * Math.pow(2, level),
+            stone: 2.e+6 * Math.pow(2, level),
+            ore: 8000 * Math.pow(2, level),
+        }),
+        getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
         category: 'Economy',
     },
 
@@ -1022,32 +1068,32 @@
         }),
         category: 'Megastructure',
     },{
-            id: 'hallOfFame',
-            name: 'Hall of Fame',
-            description: 'Motivate your warriors to be more persistent at training. Each level increase your warriors precision and evasion by 25%. Persists through resets.',
-            getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
-            getTerritoryAmount: (level) => 0,
-            isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
-            getCost: (level) => ({
-                gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
-                ore: 40000 * Math.pow(4, level),
-                stone: 20000 * Math.pow(4, level),
-            }),
-            category: 'Megastructure',
-        },{
-            id: 'greatTreasury',
-            name: 'Great Treasury',
-            description: 'Each level increase your maximum gold by 50%. Persists through resets.',
-            getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
-            getTerritoryAmount: (level) => 0,
-            isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
-            getCost: (level) => ({
-                gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
-                wood: 400000 * Math.pow(4, level),
-                stone: 200000 * Math.pow(4, level),
-            }),
-            category: 'Megastructure',
-        }];
+        id: 'hallOfFame',
+        name: 'Hall of Fame',
+        description: 'Motivate your warriors to be more persistent at training. Each level increase your warriors precision and evasion by 25%. Persists through resets.',
+        getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+            ore: 40000 * Math.pow(4, level),
+            stone: 20000 * Math.pow(4, level),
+        }),
+        category: 'Megastructure',
+    },{
+        id: 'greatTreasury',
+        name: 'Great Treasury',
+        description: 'Each level increase your maximum gold by 50%. Persists through resets.',
+        getConstructionAmount: (level) => 42800000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+            wood: 400000 * Math.pow(4, level),
+            stone: 200000 * Math.pow(4, level),
+        }),
+        category: 'Megastructure',
+    }];
 
     const fmtVal = (val) => {
         if(val == null) return '0';
@@ -1055,12 +1101,29 @@
         const sign = Math.sign(val);
         const abs = Math.abs(val);
         const orders = Math.log10(abs);
-        if(orders < 0) {
-            return `${sign < 0 ? '-' : ''}${abs.toFixed(2)}`;
-        }
+        let suffix = '';
         const suffixId = Math.floor(orders / 3);
         const mpart = (abs / (Math.pow(1000, suffixId))).toFixed(2);
-        let suffix = '';
+        if(orders < 0) {
+            if(orders >= -2) {
+                return `${sign < 0 ? '-' : ''}${abs.toFixed(2)}`;
+            }
+            const suffixId = Math.floor(orders / 3);
+            switch (suffixId) {
+                case -1:
+                    suffix = 'm';
+                    break;
+                case -2:
+                    suffix = 'mc';
+                    break;
+                case -3:
+                    suffix = 'n';
+                    break;
+            }
+            return `${sign < 0 ? '-' : ''}${mpart}${suffix}`;
+        }
+
+
         switch (suffixId) {
             case 1:
                 suffix = 'K';
@@ -1248,10 +1311,13 @@
 
         static initialize(isFromPrestige) {
             if(isFromPrestige && BasicBuilding.buildings) {
-                Object.keys(BasicBuilding.buildings).forEach(id => {
+                Object.keys({...BasicBuilding.buildings}).forEach(id => {
                     const data = buildingData.find(one => one.id === id);
-                    if(data.category !== 'Megastructure') {
+                    if((data.category !== 'Megastructure') && !BasicBuilding.buildings[id]?.memoryEmbedded) {
                         delete BasicBuilding.buildings[id];
+                    } else
+                    if(BasicBuilding.buildings[id].memoryEmbedded) {
+                        BasicBuilding.buildings[id].level = BasicBuilding.buildings[id].memoryEmbedded;
                     }
                 });
             } else {
@@ -1316,6 +1382,23 @@
             return resourcesData.find(one => one.id === 'territory').getMax() >= territoryToUse + BasicBuilding.getUsedTerritory();
         }
 
+        static getEmbedMemoryCost(data) {
+            const state = BasicBuilding.buildings[data.id];
+            if(!state) return null;
+            if(!data.getEmbedMemoryCost) return null;
+            if(state.level <= state.memoryEmbedded) return null;
+            return data.getEmbedMemoryCost(state.memoryEmbedded || 0);
+        }
+
+        static embedStones(id) {
+            const data = buildingData.find(one => one.id === id);
+            const cost = BasicBuilding.getEmbedMemoryCost(data);
+            if(!cost) return;
+            if(!BasicResources.resources.memoryStones || BasicResources.resources.memoryStones < cost) return;
+            BasicResources.subtract('memoryStones', cost);
+            BasicBuilding.buildings[id].memoryEmbedded = (BasicBuilding.buildings[id].memoryEmbedded || 0) + 1;
+        }
+
         static listAvailable() {
 
             const findsInQueue = {};
@@ -1365,6 +1448,8 @@
                     };
                 }
 
+                const embedMemoryStoneCost = BasicBuilding.getEmbedMemoryCost(one);
+
 
                 return {
                     id: one.id,
@@ -1381,6 +1466,9 @@
                         ? secondsToHms((one.getConstructionAmount(foundState.level + findsInQueue[one.id])) / BasicBuilding.getBuildingCapability())
                         : 'Never',
                     buildingSpeed: BasicBuilding.getBuildingCapability(),
+                    isEmbedMemoryStoneUnlocked: (BasicResearch.getResearchLevel('buildingMemory') > 0) && one.category !== 'Megastructure',
+                    embedMemoryStoneCost,
+                    embedMemoryStoneAvailable: embedMemoryStoneCost && embedMemoryStoneCost <= BasicResources.resources.memoryStones,
                 }
             });
 
@@ -2165,6 +2253,22 @@
 
             return mlt;
         }
+        if(id === 'flasks') {
+            let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('herbsGarden'))
+                * (1 + BasicHeirlooms.getTotalBonus('flasks'));
+
+            mlt *= 1 + 0.1*BasicResearch.getResearchLevel('herbalism');
+
+            return mlt;
+        }
+        if(id === 'herbs') {
+            let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('herbsGarden'))
+                * (1 + BasicHeirlooms.getTotalBonus('herbs'));
+
+            mlt *= 1 + 0.1*BasicResearch.getResearchLevel('herbalism');
+
+            return mlt;
+        }
         if(id === 'research') {
             let mlt = 1 + 0.2 * BasicResearch.getResearchLevel('darkExperiments');
             if(BasicTemper.getCurrentTemper() === 'wise') {
@@ -2223,7 +2327,7 @@
     const territotyPerZone = (index) => 0.04*Math.pow(1.3, index)
         * (1 + 0.2 * BasicBuilding.getBuildingLevel('watchTower'))
         * (1 + BasicHeirlooms.getTotalBonus('expansion'))
-        * (1 + BasicAuras.getEffect('territoryMax'));
+        * (1 + BasicAuras.getEffect('territory'));
 
     const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect()
         *BasicResources.getToolsEffect()
@@ -2238,7 +2342,7 @@
             gold: 0.5*amount,
         }),
         getGain: (amount) => ({
-            energy: 7 * amount * globalMult() * BasicBanners.getBonus('orange'),
+            energy: 7 * amount * globalMult() * BasicBanners.getBonus('orange') * getResourceMult('energy'),
         }),
         category: 'Basic',
     },{
@@ -2414,6 +2518,34 @@
         }),
         getGain: (amount) => ({
             flasksOfAgility: 0.01 * amount * globalMult() * getResourceMult('flasksOfAgility')
+        }),
+        category: 'Alchemy'
+    },{
+        id: 'alchemistEndurance',
+        name: 'Alchemist (flask of endurance)',
+        description: 'Converts your flasks and research into flasks of endurance, that provides bonus to your creatures HP',
+        isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy') > 0,
+        getCost: (amount) => ({
+            gold: 5.e+6 * amount,
+            flasks: 1.e+8 * amount,
+            research: 2.e+14 * amount
+        }),
+        getGain: (amount) => ({
+            flasksOfEndurance: 0.0005 * amount * globalMult() * getResourceMult('flasksOfEndurance')
+        }),
+        category: 'Alchemy'
+    },{
+        id: 'alchemistAggression',
+        name: 'Alchemist (flask of aggression)',
+        description: 'Converts your flasks and research into flasks of aggression, that provides bonus to your creatures damage',
+        isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy') > 0,
+        getCost: (amount) => ({
+            gold: 5.e+6 * amount,
+            flasks: 1.e+8 * amount,
+            research: 2.e+14 * amount
+        }),
+        getGain: (amount) => ({
+            flasksOfAggression: 0.0005 * amount * globalMult() * getResourceMult('flasksOfAggression')
         }),
         category: 'Alchemy'
     }];
@@ -2956,7 +3088,7 @@
         name: 'Swordsman legion',
         quantity: 1000,
         damage: 1.e+6,
-        maxHP: 7.25e+7,
+        maxHP: 2.25e+8,
         defense: 1675,
         armor: 1.4e+4,
         accuracy: 9.e+8,
@@ -2967,9 +3099,9 @@
         name: 'Stone golem',
         quantity: 1,
         damage: 4.e+9,
-        maxHP: 7.25e+10,
+        maxHP: 7.25e+11,
         defense: 1675,
-        armor: 9.4e+4,
+        armor: 9.4e+5,
         accuracy: 4.e+9,
         evasion: 6.e+5,
         critChance: 0.1,
@@ -2978,9 +3110,9 @@
         name: 'Iron golem',
         quantity: 1,
         damage: 9.e+9,
-        maxHP: 3.25e+11,
+        maxHP: 3.25e+12,
         defense: 10675,
-        armor: 9.4e+5,
+        armor: 9.4e+6,
         accuracy: 9.e+9,
         evasion: 6.e+5,
         critChance: 0.1,
@@ -2989,9 +3121,9 @@
         name: 'Titanium golem',
         quantity: 1,
         damage: 1.8e+10,
-        maxHP: 6.25e+11,
+        maxHP: 6.25e+12,
         defense: 10675,
-        armor: 1.4e+6,
+        armor: 1.4e+7,
         accuracy: 9.e+10,
         evasion: 6.e+5,
         critChance: 0.1,
@@ -3000,9 +3132,9 @@
         name: 'Diamond golem',
         quantity: 1,
         damage: 2.6e+10,
-        maxHP: 1.35e+12,
+        maxHP: 1.35e+13,
         defense: 19675,
-        armor: 1.9e+6,
+        armor: 1.9e+7,
         accuracy: 9.e+10,
         evasion: 6.e+5,
         critChance: 0.1,
@@ -3011,9 +3143,9 @@
         name: 'Succubus',
         quantity: 1,
         damage: 2.6e+11,
-        maxHP: 1.85e+12,
+        maxHP: 1.85e+13,
         defense: 19675,
-        armor: 4.e+4,
+        armor: 4.e+6,
         accuracy: 1.7e+12,
         evasion: 4.e+8,
         critChance: 0.4,
@@ -3022,9 +3154,9 @@
         name: 'Imps',
         quantity: 100,
         damage: 2.0e+10,
-        maxHP: 1.45e+11,
+        maxHP: 1.45e+12,
         defense: 19675,
-        armor: 6.e+4,
+        armor: 6.e+6,
         accuracy: 5.7e+12,
         evasion: 6.e+9,
         critChance: 0.4,
@@ -3033,13 +3165,79 @@
         name: 'Enforced Imps',
         quantity: 100,
         damage: 5.1e+10,
-        maxHP: 1.45e+11,
+        maxHP: 7.45e+12,
         defense: 29675,
-        armor: 6.e+5,
+        armor: 6.e+7,
         accuracy: 5.7e+12,
         evasion: 6.e+9,
         critChance: 0.4,
         critMult: 8,
+    },{
+        name: 'The Doomed One',
+        quantity: 1,
+        damage: 2.6e+13,
+        maxHP: 1.85e+15,
+        defense: 19675,
+        armor: 4.e+9,
+        accuracy: 1.7e+13,
+        evasion: 4.e+12,
+        critChance: 0.4,
+        critMult: 8,
+    },{
+        name: 'Small Demon',
+        quantity: 1,
+        damage: 6.4e+13,
+        maxHP: 7.85e+15,
+        defense: 39675,
+        armor: 9.e+9,
+        accuracy: 3.4e+13,
+        evasion: 7.e+12,
+        critChance: 0.2,
+        critMult: 6,
+    },{
+        name: 'Agile Demon',
+        quantity: 1,
+        damage: 6.9e+13,
+        maxHP: 7.85e+16,
+        defense: 39675,
+        armor: 9.e+9,
+        accuracy: 3.4e+15,
+        evasion: 7.e+13,
+        critChance: 0.2,
+        critMult: 6,
+    },{
+        name: 'Reinforced Demon',
+        quantity: 1,
+        damage: 6.9e+13,
+        maxHP: 2.85e+17,
+        defense: 1.e+10,
+        armor: 9.e+11,
+        accuracy: 3.4e+15,
+        evasion: 7.e+13,
+        critChance: 0.2,
+        critMult: 6,
+    },{
+        name: 'Snipe Demon',
+        quantity: 1,
+        damage: 6.9e+13,
+        maxHP: 6.45e+17,
+        defense: 1.e+9,
+        armor: 9.e+10,
+        accuracy: 3.4e+15,
+        evasion: 7.e+13,
+        critChance: 0.5,
+        critMult: 12,
+    },{
+        name: 'Azazel',
+        quantity: 1,
+        damage: 1.9e+14,
+        maxHP: 1.45e+18,
+        defense: 1.e+11,
+        armor: 9.e+12,
+        accuracy: 3.4e+16,
+        evasion: 7.e+14,
+        critChance: 0.15,
+        critMult: 2,
     },{
         name: 'Azragard',
         quantity: 1,
@@ -3063,12 +3261,24 @@
             return 1 + 0.025*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.5);
         }
 
+        static getFlaskOfAggressionEffect() {
+            return 1 + 1.e-4*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.45);
+        }
+
+        static getFlaskOfEnduranceEffect() {
+            return 1 + 1.e-4*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.45);
+        }
+
         static generateMy() {
             let hpBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             hpBonus *= (1 + BasicHeirlooms.getTotalBonus('resilience'));
             let dmgBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             dmgBonus *= Math.pow(1.1, BasicBuilding.getBuildingLevel('zeusStatue'));
             dmgBonus *= (1 + BasicHeirlooms.getTotalBonus('agression'));
+
+            hpBonus *= FightParties.getFlaskOfEnduranceEffect();
+            dmgBonus *= FightParties.getFlaskOfAggressionEffect();
+
             let precisionBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             let evadeBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
             let armorBonus = 1 + 0.25*BasicResearch.getResearchLevel('fighting');
@@ -3591,13 +3801,14 @@
         }
 
         static initialize(isFromPrestige) {
+            const memorizeTerritory = isFromPrestige && (BasicResearch.getResearchLevel('territoryMemory') > 0);
             BasicMap.state = {
                 level: 0,
                 cell: 0,
                 isForward: true,
                 isTurnedOn: false,
-                zonesAmounts: {},
-                maxLevel: 5 * BasicBuilding.getBuildingLevel('zeusStatue'),
+                zonesAmounts: memorizeTerritory && BasicMap.state.zonesAmounts ? BasicMap.state.zonesAmounts : {},
+                maxLevel: memorizeTerritory && BasicMap.state.maxLevel ? BasicMap.state.maxLevel : 5 * BasicBuilding.getBuildingLevel('zeusStatue'),
                 fightMode: 0,
                 bossesArena: {
                     level: 0,
@@ -3726,11 +3937,11 @@
                 }
                 if(BasicMap.state.fightMode === 1) {
                     if(BasicFight.isWon) {
-                        BasicResources.add('fame', 0.5*Math.pow(1.2,BasicMap.state.bossesArena?.level || 0));
+                        BasicResources.add('fame', 0.25*Math.pow(1.175,BasicMap.state.bossesArena?.level || 0));
                         BasicMap.state.bossesArena.level++;
                         BasicMap.state.bossesArena.maxBossLevel = BasicMap.state.bossesArena.level;
                         BasicFight.isInProgress = false;
-                        BasicMap.state.isTurnedOn = false;
+                        // BasicMap.state.isTurnedOn = false;
                         BasicFight.parties = {};
                     }
                     if(BasicFight.isLost) {
@@ -4038,7 +4249,7 @@
     },{
         id: 'alchemy',
         name: 'Alchemy',
-        description: 'Unlock alchemists job. Can convert your flasks to something more efficient. Each level improves alchemist efficiency by 10%',
+        description: 'Unlock alchemists job. Can convert your flasks to something more efficient. Each level improves alchemist efficiency by 10%. Level 10 unlock new research',
         isUnlocked: () => BasicResearch.getTotal('motivation') > 2,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4061,6 +4272,63 @@
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+12*Math.pow(1000, level*level),
+        }),
+    },{
+        id: 'herbalism',
+        name: 'Advanced Herbalism',
+        description: 'Unlock building herbs garden, that improves your herbs and flasks output. Each level improves flasks output by 10%',
+        isUnlocked: () => BasicResearch.getTotal('alchemy') > 9,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+18*Math.pow(3, level),
+        }),
+    },{
+        id: 'enhancedAlchemy',
+        name: 'Improved Alchemy',
+        description: 'Unlock new alchemists jobs, allowing even more sophisticated flasks creation',
+        isUnlocked: () => BasicResearch.getTotal('alchemy') > 9,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+18*Math.pow(3, level),
+        }),
+    },{
+        id: 'memoryStones',
+        name: 'Memory Stones',
+        description: 'Unlocks crafting memory stones',
+        isUnlocked: () => BasicResearch.getTotal('alchemy') > 9,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+18*Math.pow(3, level),
+        }),
+    },{
+        id: 'crafting',
+        name: 'Crafting',
+        description: 'Each level increase crafting efficiency by 20%',
+        isUnlocked: () => BasicResearch.getTotal('memoryStones') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            memoryStones: 2*Math.pow(3, level),
+            research: 1.e+19*Math.pow(3, level),
+        }),
+    },{
+        id: 'territoryMemory',
+        name: 'What is mine is mine',
+        description: 'Your map progression and territory captured persists through resets',
+        isUnlocked: () => BasicResearch.getTotal('memoryStones') > 0,
+        maxLevel: 1,
+        getCost: (level) => ({
+            memoryStones: 1,
+            research: 1.e+20*Math.pow(3, level),
+        }),
+    },{
+        id: 'buildingMemory',
+        name: 'Parallel Dimension',
+        description: 'Brings your realm to parallel dimension, allowing you embed memory stones into buildings, making them persist through resets',
+        isUnlocked: () => BasicResearch.getTotal('territoryMemory') > 0,
+        maxLevel: 1,
+        getCost: (level) => ({
+            memoryStones: 100,
+            research: 1.e+21*Math.pow(3, level),
         }),
     }];
 
@@ -4318,7 +4586,7 @@
             id: 'physicalTraining',
             amount: 30,
         }],
-        requirementDesc: 'Perform physical training 30 times, and get 5 levels in initiative and perseverance (learning tab)',
+        requirementDesc: 'Perform "Train stamina" 30 times, and get 5 levels in initiative and perseverance (learning tab)',
         note: 'Physical training will give you some passive energy regeneration. After performing it couple times you can set it' +
             'to automation and take some coffee, or keep clicking rest if you want things to go faster. Also, shop can have some helpfull' +
             ' items for you',
@@ -4344,7 +4612,7 @@
             amount: 40,
         }],
         requirementDesc: 'Earn 40 gold',
-        note: 'You can check shop anytime for any useful stuff that might help you to earn money. Also, keep do physical training. You\'ll need a lot energy in future'
+        note: 'You can check shop anytime for any useful stuff that might help you to earn money. Also, keep do "Train stamina". You\'ll need a lot energy in future'
     },{
         id: 'magic',
         name: 'Strange purchase',
@@ -4436,7 +4704,7 @@
             id: 'physicalTraining',
             amount: 75,
         }],
-        requirementDesc: 'Perform Energy Orb spell 10 times, physical training 75 times. Purchase magic stamp.',
+        requirementDesc: 'Perform Energy Orb spell 10 times, "Train stamina" 75 times. Purchase magic stamp.',
     },{
         id: 'anotherTry',
         name: 'Another try',
@@ -4960,7 +5228,7 @@
                 1 * Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
                 * (1 + (ShopItems.purchased.herbalismKnowledge ? 1 : 0))
                 * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
-            ) * BasicBanners.getBonus('green'),
+            ) * BasicBanners.getBonus('green') * getResourceMult('herbs'),
         }),
         getCooldown: () => 8 * Math.pow(0.99, BasicSkills.skillLevel('initiative')),
     },{
@@ -4976,7 +5244,26 @@
             flasks: (
                 1 * Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
                 * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
-            ) * BasicBanners.getBonus('green'),
+            ) * BasicBanners.getBonus('green') * getResourceMult('flasks'),
+        }),
+        getCooldown: () => 10 * Math.pow(0.99, BasicSkills.skillLevel('initiative')),
+    },{
+        id: 'craftMemStones',
+        name: 'Craft Memory Stones',
+        description: 'Make memory stones from souls and ore.',
+        note: 'Crafting gain is not affected by green banner',
+        isUnlocked: () => BasicResearch.getResearchLevel('memoryStones') > 0,
+        getCost: () => ({
+            souls: 1.e+12,
+            ore: 1.e+8,
+            energy: 1.e+9,
+        }),
+        getGain: () => ({
+            memoryStones: (
+                0.015*Math.pow(1.01, BasicSkills.skillLevel('perseverance'))
+                * (1 + 0.2 * BasicResearch.getResearchLevel('tireless'))
+                * (1 + 0.2 * BasicResearch.getResearchLevel('crafting'))
+            ) * getResourceMult('memoryStones'),
         }),
         getCooldown: () => 10 * Math.pow(0.99, BasicSkills.skillLevel('initiative')),
     },{
@@ -5057,6 +5344,7 @@
                 return {
                     id: action.id,
                     name: action.name,
+                    note: action.note,
                     gain: action.getGain(),
                     customGain: action.getCustomGainText ? action.getCustomGainText() : null,
                     description: action.description,
@@ -5331,9 +5619,27 @@
         getMax: () => 0,
         getIncome: () => 0,
     },{
+        id: 'memoryStones',
+        name: 'Mem. Stones',
+        isUnlocked: () => BasicResearch.getResearchLevel('memoryStones') > 0,
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
         id: 'flasksOfAgility',
         name: 'Flasks of agility',
         isUnlocked: () => BasicResearch.getResearchLevel('alchemy'),
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'flasksOfEndurance',
+        name: 'Flasks of endurance',
+        isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy'),
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'flasksOfAggression',
+        name: 'Flasks of aggression',
+        isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy'),
         getMax: () => 0,
         getIncome: () => 0,
     }
@@ -5596,6 +5902,14 @@
                 if(one.id === 'flasksOfAgility') {
                     bonus = FightParties.getFlaskOfAgilityEffect();
                     bonusText = `X${fmtVal(bonus)} boost`;
+                } else
+                if(one.id === 'flasksOfAggression') {
+                    bonus = FightParties.getFlaskOfAggressionEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
+                } else
+                if(one.id === 'flasksOfEndurance') {
+                    bonus = FightParties.getFlaskOfEnduranceEffect();
+                    bonusText = `X${fmtVal(bonus)} boost`;
                 }
 
                 income = BasicResources.getBalance(one);
@@ -5773,6 +6087,9 @@
             BasicBuilding.buildingQueue = save.buildingsQueue || [];
             BasicTemper.state = save.temper || BasicTemper.initialize();
             BasicSettings.settings = save.settings || BasicSettings.initialize();
+            if(!BasicSettings.settings.resourcesDisplay) {
+                BasicSettings.initResourcesSettings();
+            }
             BasicHeirlooms.state = save.heirlooms || BasicHeirlooms.initialize();
             BasicAuras.state = save.auras || BasicAuras.initialize();
             const now = Date.now();
@@ -6000,6 +6317,10 @@
 
     ColibriWorker.on('cancel_build', ({ index }) => {
         BasicBuilding.cancelBuilding(index);
+    });
+
+    ColibriWorker.on('embed_memory', ({ id }) => {
+        BasicBuilding.embedStones(id);
     });
 
     ColibriWorker.on('toggle_aura', ({ index }) => {
