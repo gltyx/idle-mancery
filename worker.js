@@ -313,6 +313,42 @@
             gold: 10000000
         }),
     },{
+        id: 'boneMasterity4',
+        name: 'Bones masterity IV',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity3,
+        getCost: () => ({
+            gold: 1.e+10
+        }),
+    },{
+        id: 'boneMasterity5',
+        name: 'Bones masterity V',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity4,
+        getCost: () => ({
+            gold: 1.e+13
+        }),
+    },{
+        id: 'boneMasterity6',
+        name: 'Bones masterity VI',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity5,
+        getCost: () => ({
+            gold: 1.e+16
+        }),
+    },{
+        id: 'boneMasterity7',
+        name: 'Bones masterity VII',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity6,
+        getCost: () => ({
+            gold: 1.e+20
+        }),
+    },{
         id: 'advancedMagic2',
         name: 'Advanced magic II',
         type: 'book',
@@ -525,10 +561,16 @@
                 flasks: 1,
                 research: 1,
                 territory: 1,
+                tools: 1,
+                weapons: 1,
                 wood: 1,
                 stone: 1,
                 ore: 1,
                 condensedTime: 1,
+                memoryStones: 1,
+                flasksOfAgility: 1,
+                flasksOfAggression: 1,
+                flasksOfEndurance: 1,
             };
             return BasicSettings.settings.resourcesDisplay;
         }
@@ -599,9 +641,12 @@
 
         static setEffortsAll({ id, val }) {
             if(!id) {
-                for(let key in BasicSkills.skills) {
-                    BasicSkills.skills[key].efforts = val;
-                }
+                learningData.filter(o => o.isUnlocked()).forEach((one) => {
+                    if(!BasicSkills.skills[one.id]) {
+                        BasicSkills.skills[one.id] = BasicSkills.initSkill();
+                    }
+                    BasicSkills.skills[one.id].efforts = +val;
+                });
             } else {
                 BasicSkills.skills[id].efforts = val;
             }
@@ -673,16 +718,19 @@
                     return;
                 }
 
+
                 // const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
                 // if(hasEnough.totalPercentage >= dT) {
                 const eff = BasicResources.efficiencies.energy.efficiency;
-                    BasicSkills.skills[item.id].xp += eff*item.efforts * dT * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
+                const realInvested = Math.min(item.efforts * dT * eff, BasicResources.resources.energy*0.999999);
+
+                BasicSkills.skills[item.id].xp += realInvested * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
                     if(item.maxXp <= BasicSkills.skills[item.id].xp) {
                         BasicSkills.skills[item.id].xp = 0;
                         BasicSkills.skills[item.id].level++;
                     }
 
-                    BasicResources.subtractBatch({ energy: item.efforts * dT * eff });
+                    BasicResources.subtractBatch({ energy: realInvested });
                 // }
             });
         }
@@ -885,6 +933,20 @@
         getEmbedMemoryCost: (amount) => 4*Math.pow(2, amount),
         category: 'Economy',
     },{
+        id: 'harbour',
+        name: 'Harbour',
+        description: 'Each level increase storage materials',
+        getConstructionAmount: (level) => 200000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 40 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicResearch.getResearchLevel('engineering') > 0,
+        getCost: (level) => ({
+            gold: 2.e+15 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 1.e+10 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 1.e+10 * Math.pow(2, level) * buildingCostModifier('materials'),
+        }),
+        getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
+        category: 'Economy',
+    },{
         id: 'graveyard',
         name: 'Graveyard',
         description: 'Each level increase souls production and fight rewards by 20%',
@@ -893,8 +955,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 10 * Math.pow(2, level),
-            stone: 20 * Math.pow(2, level),
+            wood: 10 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Economy',
@@ -907,8 +969,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 4.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 20 * Math.pow(2, level),
-            stone: 20 * Math.pow(2, level),
+            wood: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Military',
@@ -921,8 +983,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 4.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 160 * Math.pow(2, level),
-            stone: 20 * Math.pow(2, level),
+            wood: 160 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Military',
@@ -935,8 +997,8 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 2.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 40 * Math.pow(2, level),
-            stone: 20 * Math.pow(2, level),
+            wood: 40 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Research',
@@ -949,8 +1011,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('banking') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 40 * Math.pow(2, level),
-            stone: 20 * Math.pow(2, level),
+            wood: 40 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
         category: 'Economy',
@@ -963,7 +1025,7 @@
         isUnlocked: () => BasicBuilding.getBuildingLevel('palace') > 3,
         getCost: (level) => ({
             gold: 1.e+5 * Math.pow(2, level) * buildingCostModifier('gold'),
-            stone: 100 * Math.pow(2, level),
+            stone: 100 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 20*Math.pow(2, amount),
         category: 'Development',
@@ -976,8 +1038,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('cityPlanning') > 2 && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 4.e+6 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 1200 * Math.pow(2, level),
-            stone: 360 * Math.pow(2, level),
+            wood: 1200 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 360 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 20*Math.pow(2, amount),
         category: 'Military',
@@ -990,8 +1052,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('oreMining') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 400 * Math.pow(2, level),
-            stone: 200 * Math.pow(2, level),
+            wood: 400 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 200 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
         category: 'Economy',
@@ -1004,11 +1066,41 @@
         isUnlocked: () => BasicResearch.getResearchLevel('oreMining') && BasicBuilding.getBuildingLevel('mine') > 0,
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 400 * Math.pow(2, level),
-            stone: 3200 * Math.pow(2, level),
-            ore: 800 * Math.pow(2, level),
+            wood: 400 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 3200 * Math.pow(2, level) * buildingCostModifier('materials'),
+            ore: 800 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
+        category: 'Economy',
+    }, {
+        id: 'steamworks',
+        name: 'Steamworks',
+        description: 'Each level increase crafting efficiency by 20%. Bonus boosted by machinery level.',
+        getConstructionAmount: (level) => 22000000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 1000 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicResearch.getResearchLevel('machinery'),
+        getCost: (level) => ({
+            gold: 1.e+12 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 2.e+12 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 2.e+12 * Math.pow(2, level) * buildingCostModifier('materials'),
+            ore: 8.e+12 * Math.pow(2, level) * buildingCostModifier('materials'),
+        }),
+        getEmbedMemoryCost: (amount) => 400*Math.pow(2, amount),
+        category: 'Economy',
+    }, {
+        id: 'factory',
+        name: 'Dark Factory',
+        description: 'Each level increase crafting gains by 20%.',
+        getConstructionAmount: (level) => 440000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 40 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicResearch.getResearchLevel('crafting') > 4 && BasicBuilding.getBuildingLevel('mine') > 0,
+        getCost: (level) => ({
+            gold: 1.e+7 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 4000000 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 32000000 * Math.pow(2, level) * buildingCostModifier('materials'),
+            ore: 80000000 * Math.pow(2, level) * buildingCostModifier('materials'),
+        }),
+        getEmbedMemoryCost: (amount) => 160*Math.pow(2, amount),
         category: 'Economy',
     }, {
         id: 'herbsGarden',
@@ -1019,9 +1111,9 @@
         isUnlocked: () => BasicResearch.getResearchLevel('herbalism'),
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(2, level) * buildingCostModifier('gold'),
-            wood: 4.e+6 * Math.pow(2, level),
-            stone: 2.e+6 * Math.pow(2, level),
-            ore: 8000 * Math.pow(2, level),
+            wood: 4.e+6 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 2.e+6 * Math.pow(2, level) * buildingCostModifier('materials'),
+            ore: 8000 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 80*Math.pow(2, amount),
         category: 'Economy',
@@ -1037,8 +1129,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('architecture') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(4, level) * buildingCostModifier('gold'),
-            wood: 400 * Math.pow(4, level),
-            stone: 20000 * Math.pow(4, level),
+            wood: 400 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 20000 * Math.pow(4, level) * buildingCostModifier('materials'),
         }),
         category: 'Megastructure',
     },{
@@ -1050,8 +1142,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('oreMining') && BasicResearch.getResearchLevel('architecture') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(4, level) * buildingCostModifier('gold'),
-            ore: 4000 * Math.pow(4, level),
-            stone: 20000 * Math.pow(4, level),
+            ore: 4000 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 20000 * Math.pow(4, level) * buildingCostModifier('materials'),
         }),
         category: 'Megastructure',
     },{
@@ -1063,8 +1155,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('architecture') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+7 * Math.pow(4, level) * buildingCostModifier('gold'),
-            wood: 40000 * Math.pow(4, level),
-            stone: 20000 * Math.pow(4, level),
+            wood: 40000 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 20000 * Math.pow(4, level) * buildingCostModifier('materials'),
         }),
         category: 'Megastructure',
     },{
@@ -1076,8 +1168,8 @@
         isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
-            ore: 40000 * Math.pow(4, level),
-            stone: 20000 * Math.pow(4, level),
+            ore: 40000 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 20000 * Math.pow(4, level) * buildingCostModifier('materials'),
         }),
         category: 'Megastructure',
     },{
@@ -1089,8 +1181,60 @@
         isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
         getCost: (level) => ({
             gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
-            wood: 400000 * Math.pow(4, level),
-            stone: 200000 * Math.pow(4, level),
+            wood: 400000 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 200000 * Math.pow(4, level) * buildingCostModifier('materials'),
+        }),
+        category: 'Megastructure',
+    },{
+        id: 'bigGardens',
+        name: 'Big Gardens',
+        description: 'Each level increase your flasks production by 25%. Persists through resets.',
+        getConstructionAmount: (level) => 4280000000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+            wood: 1.e+7 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 1.e+7 * Math.pow(4, level) * buildingCostModifier('materials'),
+        }),
+        category: 'Megastructure',
+    },{
+        id: 'janusTemple',
+        name: 'Janus Temple',
+        description: 'Each level increase your memory stones craft output 25%. Persists through resets.',
+        getConstructionAmount: (level) => 4280000000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('levitation') && BasicResearch.getResearchLevel('memoryStones') && BasicBuilding.getBuildingLevel('warehouse') > 0,
+        getCost: (level) => ({
+            gold: 1.e+8 * Math.pow(4, level) * buildingCostModifier('gold'),
+            wood: 1.e+6 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 4.e+7 * Math.pow(4, level) * buildingCostModifier('materials'),
+        }),
+        category: 'Megastructure',
+    },{
+        id: 'mausoleum',
+        name: 'Mausoleum',
+        description: 'Each level decrease your creatures cost exponent base by 5%, making summon price increase slower.',
+        getConstructionAmount: (level) => 44280000000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('engineering'),
+        getCost: (level) => ({
+            gold: 1.e+11 * Math.pow(4, level) * buildingCostModifier('gold'),
+            wood: 1.e+9 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 4.e+10 * Math.pow(4, level) * buildingCostModifier('materials'),
+        }),
+        category: 'Megastructure',
+    },{
+        id: 'greatFactory',
+        name: 'Great Factory',
+        description: 'Each level increase your blacksmiths and armorers production by 20%.',
+        getConstructionAmount: (level) => 44280000000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 0,
+        isUnlocked: () => BasicResearch.getResearchLevel('engineering'),
+        getCost: (level) => ({
+            gold: 1.e+11 * Math.pow(4, level) * buildingCostModifier('gold'),
+            wood: 1.e+10 * Math.pow(4, level) * buildingCostModifier('materials'),
+            stone: 4.e+9 * Math.pow(4, level) * buildingCostModifier('materials'),
         }),
         category: 'Megastructure',
     }];
@@ -1403,6 +1547,7 @@
 
             const findsInQueue = {};
 
+            let timeTotal = 0;
             const queue = BasicBuilding.buildingQueue.map(one => {
                 if(!findsInQueue[one.id]) {
                     findsInQueue[one.id] = 1;
@@ -1413,6 +1558,8 @@
                 const foundState = BasicBuilding.buildings[one.id] || {
                     level: 0,
                 };
+                const time = BasicBuilding.getBuildingCapability() ? (item.getConstructionAmount(foundState.level + findsInQueue[one.id] - 1) - one.buildingProgress) / BasicBuilding.getBuildingCapability() : 1.e+308;
+                timeTotal += time;
                 return {
                     ...one,
                     name: item.name,
@@ -1476,6 +1623,7 @@
                 list,
                 queue,
                 maxQueue: BasicBuilding.getMaxQueue(),
+                timeQueued: timeTotal < 1.e+30 ? secondsToHms(timeTotal) : 'Never'
             }
         }
 
@@ -1653,7 +1801,9 @@
             }
             BasicTemper.state.currentId = id;
             BasicTemper.state.popupShown = false;
-            data.onStartRun();
+            if(data.onStartRun) {
+                data.onStartRun();
+            }
         }
 
         static getList = () => {
@@ -2020,6 +2170,7 @@
             auras: [],
             currentBonus: {},
             filterMinTier: 0,
+            filterMinQuality: 0,
         }
 
         static initialize(isBannerPrestige) {
@@ -2063,9 +2214,15 @@
             BasicAuras.state.filterMinTier = tierId;
         }
 
+        static setMinQuality(quality) {
+            BasicAuras.state.filterMinQuality = quality;
+        }
+
         static giveToPlayer(aura) {
             if(BasicAuras.state.auras.length > 50) return;
             if(BasicAuras.state.filterMinTier && aura.tier < BasicAuras.state.filterMinTier) return;
+            if(BasicAuras.state.filterMinQuality && !Number.isNaN(BasicAuras.state.filterMinQuality)
+            && BasicAuras.state.filterMinQuality > aura.quality) return;
             BasicAuras.state.auras.push(aura);
         }
 
@@ -2176,6 +2333,7 @@
                 current: BasicAuras.state.activeIndexes,
                 currentBonus: BasicAuras.state.currentBonus,
                 filterMinTier: BasicAuras.state.filterMinTier,
+                filterMinQuality: BasicAuras.state.filterMinQuality,
             });
         }
 
@@ -2259,6 +2417,8 @@
 
             mlt *= 1 + 0.1*BasicResearch.getResearchLevel('herbalism');
 
+            mlt *= (1 + 0.25 * BasicBuilding.getBuildingLevel('bigGardens'));
+
             return mlt;
         }
         if(id === 'herbs') {
@@ -2270,7 +2430,8 @@
             return mlt;
         }
         if(id === 'research') {
-            let mlt = 1 + 0.2 * BasicResearch.getResearchLevel('darkExperiments');
+            let mlt = 1 + 0.2 * BasicResearch.getResearchLevel('darkExperiments')
+                * (1 + BasicHeirlooms.getTotalBonus('intellect'));
             if(BasicTemper.getCurrentTemper() === 'wise') {
                 mlt = 1.2;
             }
@@ -2291,22 +2452,51 @@
             return mlt;
         }
         if(id === 'tools') {
-            let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
+            let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('forge'))
+                * (1 + BasicHeirlooms.getTotalBonus('blacksmith'));
 
             mlt *= 1 + BasicAuras.getEffect('tools');
+
+            if(BasicResearch.getResearchLevel('darkIndustrialization')) {
+                mlt *= 1 + 0.2 * BasicBuilding.getBuildingLevel('factory');
+            }
+
+            mlt *= 1 + 0.2 * BasicBuilding.getBuildingLevel('greatFactory');
+
+            if(BasicResearch.getResearchLevel('assemblyLines')) {
+                mlt *= 1 + (0.2 + 0.04*BasicResearch.getResearchLevel('machinery'))*BasicBuilding.getBuildingLevel('steamworks');
+            }
 
             return mlt;
         }
         if(id === 'weapons') {
-            let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('forge');
+            let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('forge'))
+                * (1 + BasicHeirlooms.getTotalBonus('armorer'));
 
             mlt *= 1 + BasicAuras.getEffect('weapons');
+
+            mlt *= 1 + 0.2 * BasicBuilding.getBuildingLevel('greatFactory');
+
+            if(BasicResearch.getResearchLevel('darkIndustrialization')) {
+                mlt *= 1 + 0.2 * BasicBuilding.getBuildingLevel('factory');
+            }
+
+            if(BasicResearch.getResearchLevel('assemblyLines')) {
+                mlt *= 1 + (0.2 + 0.04*BasicResearch.getResearchLevel('machinery'))*BasicBuilding.getBuildingLevel('steamworks');
+            }
 
 
             return mlt;
         }
         if(id === 'flasksOfAgility') {
             let mlt = 1 + 0.1 * BasicResearch.getResearchLevel('alchemy');
+
+            return mlt;
+        }
+        if(id === 'memoryStones') {
+            let mlt = 1 + 0.25 * BasicBuilding.getBuildingLevel('janusTemple');
+            mlt *= 1 + 0.2 * BasicBuilding.getBuildingLevel('factory');
+            mlt *= 1 + (0.2 + 0.04*BasicResearch.getResearchLevel('machinery'))*BasicBuilding.getBuildingLevel('steamworks');
 
             return mlt;
         }
@@ -2317,6 +2507,10 @@
         let mlt = 1.;
         if(type === 'territory' || type === 'gold') {
             mlt *= Math.pow(0.9, BasicResearch.getResearchLevel('cityPlanning'));
+        }
+
+        if(type === 'materials') {
+            mlt *= Math.pow(0.9, BasicResearch.getResearchLevel('engineering'));
         }
 
         mlt /= 1 + BasicAuras.getEffect('buildingCost');
@@ -2527,7 +2721,7 @@
         isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy') > 0,
         getCost: (amount) => ({
             gold: 5.e+6 * amount,
-            flasks: 1.e+8 * amount,
+            flasks: 2.e+7 * amount,
             research: 2.e+14 * amount
         }),
         getGain: (amount) => ({
@@ -2541,7 +2735,7 @@
         isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy') > 0,
         getCost: (amount) => ({
             gold: 5.e+6 * amount,
-            flasks: 1.e+8 * amount,
+            flasks: 2.e+7 * amount,
             research: 2.e+14 * amount
         }),
         getGain: (amount) => ({
@@ -2573,6 +2767,18 @@
             if(ShopItems.purchased['boneMasterity3']) {
                 mult *= 0.25;
             }
+            if(ShopItems.purchased['boneMasterity4']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity5']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity6']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity7']) {
+                mult *= 0.25;
+            }
             mult *= Math.pow(0.5, BasicBuilding.getBuildingLevel('pyramids'));
             /*for(let i = 0; i < amt; i++) {
                 sls += mult * Math.pow(
@@ -2586,7 +2792,7 @@
             let base = (1.0 + 0.075 * Math.pow(0.95,
                 BasicResearch.getResearchLevel('necromancery')
                 + BasicResearch.getResearchLevel('summoner')
-            ));
+            ) * Math.pow(0.95, BasicBuilding.getBuildingLevel('mausoleum')));
             sls = (mult * Math.pow(base,CreatureBasic.numCreatures)*(Math.pow(base, amt) - 1))/(base-1);
 
             return {
@@ -2599,7 +2805,9 @@
 
             let base = (1.0 + 0.075 * Math.pow(0.95,
                 BasicResearch.getResearchLevel('necromancery')
-                + BasicResearch.getResearchLevel('summoner')));
+                + BasicResearch.getResearchLevel('summoner'))
+                * Math.pow(0.95, BasicBuilding.getBuildingLevel('mausoleum'))
+            );
 
             let mult = 1.;
             if(BasicTemper.getCurrentTemper() === 'authoritative') {
@@ -2612,6 +2820,18 @@
                 mult *= 0.25;
             }
             if(ShopItems.purchased['boneMasterity3']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity4']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity5']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity6']) {
+                mult *= 0.25;
+            }
+            if(ShopItems.purchased['boneMasterity7']) {
                 mult *= 0.25;
             }
             mult *= Math.pow(0.5, BasicBuilding.getBuildingLevel('pyramids'));
@@ -2752,7 +2972,11 @@
         }
 
         static getBannersOnPrestige = () => {
-            return CreatureBasic.numCreatures * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument') * (1 + BasicResources.getResource('fame')));
+            return CreatureBasic.numCreatures
+                * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument')
+                    * (1 + BasicResources.getResource('fame')
+                    )
+                );
         }
 
         static initialize() {
@@ -2784,7 +3008,7 @@
             if(!BasicBanners.banners[id]) return true;
             for(let index of Array.from({ length: 6 }).keys()) {
                 if(BasicBanners.banners[id]?.[index]?.amount !== BasicBanners.prevBanners[id]?.[index]?.amount) {
-                    console.log('changed: ', id, index);
+                    // console.log('changed: ', id, index);
                     return true;
                 }
             }
@@ -2814,6 +3038,13 @@
             return hasAll;
         }
 
+        static getSingleBannerEffect(amt) {
+            const amtBeforeDiminish = Math.min(1.e+4, amt);
+            let amtAfterDiminish = Math.max(0, amt - 1.e+4);
+            let diminishFactor = Math.pow(Math.max(1, Math.log10(amtAfterDiminish / 1.e+4)), 0.25);
+            return 8.03 * Math.pow((amtBeforeDiminish || 0) + Math.pow(amtAfterDiminish, 0.75 / diminishFactor), 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
+        }
+
         static getBonus(id) {
             let effectCumulative = 1.0;
             if(!BasicBanners.banners[id]) {
@@ -2823,12 +3054,80 @@
             Array.from({length: 6}).forEach((one, tierIndex) => {
                 const current = BasicBanners.banners[id][5 - tierIndex];
 
-                const thisEffect = 8.03 * Math.pow(current.amount || 0, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
+                const thisEffect = BasicBanners.getSingleBannerEffect(current.amount);
                 effectCumulative = 1+0.01*thisEffect*pEff;
 
                 pEff = effectCumulative;
             });
             return effectCumulative;
+        }
+
+        static getBonusByArray(bannersArray) {
+            let effectCumulative = 1.0;
+            let pEff = 1;
+            [...bannersArray].reverse().forEach((one, tierIndex) => {
+                const current = one.amount;
+
+                const thisEffect = BasicBanners.getSingleBannerEffect(current);
+                effectCumulative = 1+0.01*thisEffect*pEff;
+
+                pEff = effectCumulative;
+            });
+            return effectCumulative;
+        }
+
+        static getOptimalBanners(bannersArray) {
+            const actualEffect = BasicBanners.getBonusByArray(bannersArray);
+            // now we need to combine some analytical formula with some numerical magic
+            // for this purpose for each banner tier we have to determine if bonus to it
+            // will cover expenses in other
+            // like dM(i) / dN > 5*dM(i-1) / dN OR > 25*dM(i-2) / dN
+            // so, starting from the end
+            for(let iTierCalculated = 5; iTierCalculated > 0; iTierCalculated--) {
+                // let convMult = 1.0;
+                const newBannersArray = [...bannersArray.map(o => ({...o}))];
+                let pEff = actualEffect;
+                for(let iConvertFrom = iTierCalculated-1; iConvertFrom >= 0; iConvertFrom--) {
+                    // convMult *= 5;
+                    let minus = 0.1 * newBannersArray[iConvertFrom].amount;
+                    let plus = minus / 5;
+                    if(plus >= 1) {
+                        newBannersArray[iConvertFrom+1].amount += plus;
+                        newBannersArray[iConvertFrom].amount -= minus;
+                        const nEff = BasicBanners.getBonusByArray(newBannersArray);
+                        if(nEff > pEff) {
+                            return {
+                                newBannersArray,
+                                iTierToConvert: iTierCalculated,
+                                iConvertFrom,
+                                effect: nEff,
+                                minus,
+                                plus
+                            }
+                        }
+                    }
+
+                }
+            }
+            return {
+                newBannersArray: bannersArray,
+                iTierToConvert: null,
+                iConvertFrom: null,
+                effect: actualEffect,
+            }
+        }
+
+        static doOptimizeAll = (id) => {
+            let banners = BasicBanners.banners[id];
+            let optimal = BasicBanners.getOptimalBanners(banners);
+            let nI = 0;
+            while (nI < 1000 && optimal.iConvertFrom !== null) {
+                optimal = BasicBanners.getOptimalBanners(banners);
+                banners = optimal.newBannersArray;
+                nI++;
+            }
+            console.log('optimizedIn: ', nI);
+            BasicBanners.banners[id] = optimal.newBannersArray;
         }
 
         static getList() {
@@ -2843,6 +3142,12 @@
                 }
 
                 let pEff = 1;
+
+                let effIfConverted = 1;
+
+                const optimal = BasicBanners.getOptimalBanners(BasicBanners.banners[bannerInfo.id]);
+
+                // console.log('optimal: ', bannerInfo.id, optimal);
 
                 Array.from({length: 6}).forEach((one, tierIndex) => {
                     const current = BasicBanners.banners[bannerInfo.id][5-tierIndex];
@@ -2870,7 +3175,7 @@
                             timeLeft,
                         });
                     } else {
-                        const thisEffect = 8.03 * Math.pow(current.amount, 0.5 + 0.01 * BasicResearch.getResearchLevel('bannersMasterity'));
+                        const thisEffect = BasicBanners.getSingleBannerEffect(current.amount);
                         effectCumulative = (1 + 0.01 * thisEffect * pEff);
                         tiers.unshift({
                             amount: current.amount,
@@ -2882,8 +3187,31 @@
                             canPrestige,
                             timeLeft
                         });
-                        pEff = effectCumulative;
                     }
+
+                    if(tierIndex > 0 && effIfConverted) {
+                        let potBonus = (1 + 0.01 * BasicBanners.getSingleBannerEffect(current.amount * 0.9) * effIfConverted);
+                        if(potBonus > effectCumulative && tiers[1].maxConversion >= 10) {
+                            tiers[1].suggestConversion = true;
+                            tiers[1].potentialBonus = potBonus;
+                            tiers[1].potentialPrev = effIfConverted;
+                        }
+                    }
+                    if(tierIndex > 0 && optimal.iConvertFrom === 5 - tierIndex && !tiers[1].suggestConversion) {
+                        tiers[1].suggestConversion = true;
+                        tiers[1].potentialBonus = optimal.effect;
+                        tiers[1].potentialPrev = effIfConverted;
+                    }
+                    if(tierIndex < 5) {
+                        const prev = BasicBanners.banners[bannerInfo.id][4-tierIndex];
+                        if(prev && prev.amount) {
+                            const thisEffIfConverted = BasicBanners.getSingleBannerEffect((current.amount || 0) + 0.1 * 0.2 * prev.amount);
+                            effIfConverted = (1 + 0.01 * thisEffIfConverted * pEff);
+                        }
+
+                    }
+                    pEff = effectCumulative;
+
                 });
 
                 return {
@@ -2894,6 +3222,7 @@
                     isUnlocked: bannerInfo.isUnlocked(),
                     isChanged: BasicBanners.isChanged(bannerInfo.id),
                     tiers,
+                    isShowOptimizeAll: optimal.iConvertFrom !== null,
                 }
             });
             return result;
@@ -3010,7 +3339,7 @@
     },{
         name: 'Million of Rats',
         quantity: 1000000,
-        damage: 240,
+        damage: 120,
         maxHP: 225,
         defense: 1,
         armor: 1,
@@ -3239,6 +3568,160 @@
         critChance: 0.15,
         critMult: 2,
     },{
+        name: 'Living Stone',
+        quantity: 1,
+        damage: 6.9e+14,
+        maxHP: 7.45e+18,
+        defense: 1.e+12,
+        armor: 9.e+12,
+        accuracy: 7.4e+16,
+        evasion: 9.1e+14,
+        critChance: 0.15,
+        critMult: 2,
+    },{
+        name: 'Ghoul',
+        quantity: 1,
+        damage: 1.9e+15,
+        maxHP: 2.45e+19,
+        defense: 1.e+13,
+        armor: 7.e+13,
+        accuracy: 9.4e+16,
+        evasion: 2.1e+15,
+        critChance: 0.15,
+        critMult: 2,
+    },{
+        name: 'Snipe Ghoul',
+        quantity: 1,
+        damage: 1.9e+15,
+        maxHP: 2.45e+19,
+        defense: 1.e+13,
+        armor: 7.e+13,
+        accuracy: 9.4e+16,
+        evasion: 2.1e+16,
+        critChance: 0.5,
+        critMult: 5,
+    },{
+        name: 'Ghost Peasant',
+        quantity: 1,
+        damage: 2.9e+15,
+        maxHP: 2.45e+19,
+        defense: 1.e+13,
+        armor: 7.e+13,
+        accuracy: 9.4e+16,
+        evasion: 2.1e+16,
+        critChance: 0.15,
+        critMult: 2,
+    },{
+        name: 'Ghost Swordsman',
+        quantity: 1,
+        damage: 4.9e+15,
+        maxHP: 3.45e+19,
+        defense: 1.e+14,
+        armor: 7.e+10,
+        accuracy: 9.4e+17,
+        evasion: 1.1e+17,
+        critChance: 0.45,
+        critMult: 6,
+    },{
+        name: 'Ghost Axeman',
+        quantity: 1,
+        damage: 9.9e+15,
+        maxHP: 8.45e+19,
+        defense: 1.e+14,
+        armor: 7.e+10,
+        accuracy: 9.4e+17,
+        evasion: 1.8e+17,
+        critChance: 0.25,
+        critMult: 4,
+    },{
+        name: 'Ghost Pikeman',
+        quantity: 1,
+        damage: 4.9e+16,
+        maxHP: 1.45e+20,
+        defense: 1.e+14,
+        armor: 7.e+10,
+        accuracy: 9.4e+17,
+        evasion: 4.8e+17,
+        critChance: 0.25,
+        critMult: 4,
+    },{
+        name: 'Ghost Champion',
+        quantity: 1,
+        damage: 9.9e+16,
+        maxHP: 1.45e+21,
+        defense: 1.e+15,
+        armor: 7.e+14,
+        accuracy: 1.4e+18,
+        evasion: 4.8e+17,
+        critChance: 0.4,
+        critMult: 7,
+    },{
+        name: 'Lost Souls',
+        quantity: 1000,
+        damage: 9.9e+14,
+        maxHP: 9.45e+18,
+        defense: 1.e+15,
+        armor: 7.e+14,
+        accuracy: 1.4e+18,
+        evasion: 4.8e+17,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Azragards Servant',
+        quantity: 1,
+        damage: 1.9e+17,
+        maxHP: 1.45e+22,
+        defense: 1.e+15,
+        armor: 7.e+15,
+        accuracy: 1.4e+19,
+        evasion: 1.8e+18,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'Small Wyvern',
+        quantity: 1,
+        damage: 2.9e+17,
+        maxHP: 3.45e+22,
+        defense: 2.e+15,
+        armor: 7.e+15,
+        accuracy: 1.4e+19,
+        evasion: 4.8e+18,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'Medium Wyvern',
+        quantity: 1,
+        damage: 6.7e+17,
+        maxHP: 1.15e+23,
+        defense: 2.e+15,
+        armor: 7.e+15,
+        accuracy: 1.4e+19,
+        evasion: 7.2e+18,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'Big Wyvern',
+        quantity: 1,
+        damage: 1.02e+18,
+        maxHP: 3.47e+23,
+        defense: 4.e+15,
+        armor: 7.e+16,
+        accuracy: 1.4e+19,
+        evasion: 9.6e+18,
+        critChance: 0.2,
+        critMult: 3,
+    },{
+        name: 'The Great Lizard',
+        quantity: 1,
+        damage: 1.72e+18,
+        maxHP: 8.47e+23,
+        defense: 1.e+16,
+        armor: 2.e+17,
+        accuracy: 3.4e+19,
+        evasion: 1.6e+19,
+        critChance: 0.2,
+        critMult: 3,
+    },{
         name: 'Azragard',
         quantity: 1,
         damage: 1.e+56,
@@ -3262,11 +3745,11 @@
         }
 
         static getFlaskOfAggressionEffect() {
-            return 1 + 1.e-4*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.45);
+            return 1 + 1.e-3*Math.pow((BasicResources.resources.flasksOfAggression || 0), 0.45);
         }
 
         static getFlaskOfEnduranceEffect() {
-            return 1 + 1.e-4*Math.pow((BasicResources.resources.flasksOfAgility || 0), 0.45);
+            return 1 + 1.e-3*Math.pow((BasicResources.resources.flasksOfEndurance || 0), 0.45);
         }
 
         static generateMy() {
@@ -3638,6 +4121,30 @@
         isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
         base: 0.01,
         getText: (amount) => `+${fmtVal(amount*100)}% to territory gain`
+    },{
+        id: 'flasks',
+        name: 'alchemist',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to flasks production`
+    },{
+        id: 'blacksmith',
+        name: 'blacksmith',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to blacksmith production`
+    },{
+        id: 'armorer',
+        name: 'armorer',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to armorer production`
+    },{
+        id: 'intellect',
+        name: 'intellect',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to research points production`
     }];
 
     class HeirloomGenerator {
@@ -3679,6 +4186,8 @@
                     return 'Epic ';
                 case 4:
                     return 'Legendary ';
+                case 5:
+                    return 'Ethereal ';
             }
         }
 
@@ -3697,6 +4206,16 @@
             const rn = Math.random();
             if(rn < prob) {
                 const tr = Math.floor(4 * Math.pow(Math.random(), 8));
+                const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
+                return heirloom;
+            }
+            return null;
+        }
+
+        static generateProbabilityBasedFromBoss(level, prob) {
+            const rn = Math.random();
+            if(rn < prob) {
+                const tr = 1 + Math.floor(4 * Math.pow(Math.random(), 8));
                 const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
                 return heirloom;
             }
@@ -3937,9 +4456,20 @@
                 }
                 if(BasicMap.state.fightMode === 1) {
                     if(BasicFight.isWon) {
-                        BasicResources.add('fame', 0.25*Math.pow(1.175,BasicMap.state.bossesArena?.level || 0));
+                        BasicResources.add('fame', 0.25*Math.pow(1.2,BasicMap.state.bossesArena?.level || 0));
+
+                        /*if(BasicResearch.getResearchLevel('memoryStones') > 0) {
+                            BasicResources.add('memoryStones', (0.4 + 0.6* Math.random())*Math.pow(1.2,BasicMap.state.bossesArena?.level || 0));
+                        }*/
+                        const hr = HeirloomGenerator.generateProbabilityBasedFromBoss(20 + 2*BasicMap.state.bossesArena?.level || 0, 0.1);
+                        if(hr) {
+                            BasicHeirlooms.giveToPlayer(hr);
+                            console.log('AWARDED HEIRLOOM: ', hr);
+                        }
+
                         BasicMap.state.bossesArena.level++;
                         BasicMap.state.bossesArena.maxBossLevel = BasicMap.state.bossesArena.level;
+
                         BasicFight.isInProgress = false;
                         // BasicMap.state.isTurnedOn = false;
                         BasicFight.parties = {};
@@ -4303,7 +4833,7 @@
     },{
         id: 'crafting',
         name: 'Crafting',
-        description: 'Each level increase crafting efficiency by 20%',
+        description: 'Each level increase crafting efficiency by 20%. Level 5 unlock new building',
         isUnlocked: () => BasicResearch.getTotal('memoryStones') > 0,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4329,6 +4859,42 @@
         getCost: (level) => ({
             memoryStones: 100,
             research: 1.e+21*Math.pow(3, level),
+        }),
+    },{
+        id: 'darkIndustrialization',
+        name: 'Dark Industrialization',
+        description: 'Factory bonus also applied to blacksmiths and armorers efficiency',
+        isUnlocked: () => BasicResearch.getTotal('crafting') > 4,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+22*Math.pow(3, level),
+        }),
+    },{
+        id: 'engineering',
+        name: 'Advanced Engineering',
+        description: 'Unlocks new building and megastructures. Also each level decrease building resources costs by 10%',
+        isUnlocked: () => BasicResearch.getTotal('darkIndustrialization') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+27*Math.pow(3, level),
+        }),
+    },{
+        id: 'machinery',
+        name: 'Machinery',
+        description: 'Unlocks building Steamworks. In addition, adds one automation slot. Each level increase steamworks efficiency by 20%',
+        isUnlocked: () => BasicResearch.getTotal('engineering') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+30*Math.pow(3, level),
+        }),
+    },{
+        id: 'assemblyLines',
+        name: 'Assembly Lines',
+        description: 'Steamworks also boosts tools and weapons production',
+        isUnlocked: () => BasicResearch.getTotal('machinery') > 0,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+34*Math.pow(3, level),
         }),
     }];
 
@@ -5254,8 +5820,8 @@
         note: 'Crafting gain is not affected by green banner',
         isUnlocked: () => BasicResearch.getResearchLevel('memoryStones') > 0,
         getCost: () => ({
-            souls: 1.e+12,
-            ore: 1.e+8,
+            souls: 1.e+11,
+            ore: 1.e+7,
             energy: 1.e+9,
         }),
         getGain: () => ({
@@ -5426,7 +5992,8 @@
                 BasicActions.actions[id].isAutomated = false;
             } else {
                 const maxAutomations = 1 + (ShopItems.purchased.timeManagement ? 1 : 0)
-                    + (ShopItems.purchased.bookOfMultitasking ? 2 : 0);
+                    + (ShopItems.purchased.bookOfMultitasking ? 2 : 0)
+                + (BasicResearch.getResearchLevel('machinery') ? 1 : 0);
                 let newA = maxAutomations - 1;
                 Object.keys(BasicActions.actions).forEach(key => {
                     if(key !== id && BasicActions.actions[key].isAutomated) {
@@ -5577,7 +6144,10 @@
         id: 'wood',
         name: 'Wood',
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
-        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse')
+        getMax: () => (
+            10 * BasicBuilding.getBuildingLevel('warehouse')
+            + 250 * BasicBuilding.getBuildingLevel('harbour')
+            )
             * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
             * (1 + 0.2 * BasicResearch.getResearchLevel('logistics'))
             * (1 + BasicAuras.getEffect('woodMax')),
@@ -5586,7 +6156,10 @@
         id: 'stone',
         name: 'Stone',
         isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0,
-        getMax: () => 10 * BasicBuilding.getBuildingLevel('warehouse') * (
+        getMax: () => (
+                10 * BasicBuilding.getBuildingLevel('warehouse')
+                + 250 * BasicBuilding.getBuildingLevel('harbour')
+            ) * (
             1 + 0.2 * BasicResearch.getResearchLevel('logistics')
         ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
             * (1 + BasicAuras.getEffect('stoneMax')),
@@ -5765,7 +6338,7 @@
 
         static getResource(id) {
             if(!BasicResources.resourcesMax[id]) {
-                return BasicResources.resources[id];
+                return Math.max(BasicResources.resources[id], 0);
             }
             return Math.max(0,Math.min(BasicResources.resources[id], BasicResources.resourcesMax[id]));
         }
@@ -6236,6 +6809,10 @@
         BasicBanners.revert(id);
     });
 
+    ColibriWorker.on('do_optimize', id => {
+        BasicBanners.doOptimizeAll(id);
+    });
+
     ColibriWorker.on('do_select_temper', ({ id }) => {
         console.log('selecting temper: ', id);
         BasicTemper.setCurrentTemper(id);
@@ -6337,6 +6914,10 @@
 
     ColibriWorker.on('change_aura_mintier', ({ tierId }) => {
         BasicAuras.setMinTier(tierId);
+    });
+
+    ColibriWorker.on('change_aura_minquality', ({ quality }) => {
+        BasicAuras.setMinQuality(quality);
     });
 
 }));
