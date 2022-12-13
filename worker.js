@@ -39,20 +39,20 @@
         getCost: () => ({
             gold: 10,
         }),
-    },{
+    },{  // Changed
         id: 'manual',
         name: 'Labor Manual',
         type: 'book',
-        description: 'A manual that provides some techniques on effective laboring. Work at Stable action is now twice as costly but twice as effective also.',
+        description: 'A manual on effective laboring. Work at Stable gives twice as much gold at twice the cost.',
         isUnlocked: () => true,
         getCost: () => ({
             gold: 10,
         }),
-    },{
+    },{ // Changed
         id: 'gymnastics',
         name: 'Gymnastic\'s manual',
         type: 'book',
-        description: 'A manual that provides some techniques for general exercising. Train stamina is now twice as efficient.',
+        description: 'A manual for general exercising. Train stamina is now twice as efficient.',
         isUnlocked: () => true,
         getCost: () => ({
             gold: 15,
@@ -70,7 +70,7 @@
         id: 'bookOfMagic',
         name: 'Book of basic magic',
         type: 'book',
-        description: 'Unlocks mana end some basic spells',
+        description: 'Unlocks mana and some basic spells',
         isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 25,
         getCost: () => ({
             gold: 40,
@@ -131,20 +131,20 @@
         getCost: () => ({
             gold: 250
         }),
-    },{
+    },{ // Changed
         id: 'stash',
         name: 'Stash',
         type: 'trinket',
-        description: 'Increase place for gold by 200',
+        description: 'Increases your maximum gold by 200',
         isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 150,
         getCost: () => ({
             gold: 300
         }),
-    },{
+    },{ // Changed
         id: 'summoning',
         name: 'Basic summoning',
         type: 'book',
-        description: 'Purchase basic sumonning manual',
+        description: 'Purchase basic Summoning manual',
         isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 250,
         getCost: () => ({
             gold: 500
@@ -168,7 +168,7 @@
             gold: 750,
             energy: 100
         }),
-    },{
+    },{ 
         id: 'betterSummoning',
         name: 'Summoning Effiency',
         type: 'book',
@@ -177,11 +177,11 @@
         getCost: () => ({
             gold: 1000
         }),
-    },{
+    },{ // Changed
         id: 'herbalism',
         name: 'Herbalism',
         type: 'book',
-        description: 'Purchase herbalism book to take advantages of flasks',
+        description: 'Purchase herbalism book to start creation of flasks',
         isUnlocked: () => ShopItems.purchased.summoning,
         getCost: () => ({
             gold: 1000
@@ -195,20 +195,20 @@
         getCost: () => ({
             gold: 1500
         }),
-    },{
+    },{ // Changed
         id: 'appretienceManual',
         name: 'Manual of appretience',
         type: 'book',
-        description: 'Enpower all your spells by 50%',
+        description: 'Empower all your spells by 50%',
         isUnlocked: () => ShopItems.purchased.soulHarvester,
         getCost: () => ({
             gold: 2000
         }),
-    },{
+    },{ // Changed
         id: 'summoningJobs',
         name: 'Summoning Jobs',
         type: 'book',
-        description: 'Purchase summoning jobs knowledge book to increase job efficiency. +10% creature productions',
+        description: 'Purchase summoning jobs knowledge book to increase job efficiency. +10% creature production',
         isUnlocked: () => ShopItems.purchased.summoning,
         getCost: () => ({
             gold: 4000
@@ -240,11 +240,11 @@
         getCost: () => ({
             gold: 12000
         }),
-    },{
+    },{ // Changed
         id: 'precisionTraining',
         name: 'Fighting skills',
         type: 'book',
-        description: 'Purchase book learn your creatures to be 50% more precise',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
         isUnlocked: () => ShopItems.purchased.appretienceManual,
         getCost: () => ({
             gold: 40000
@@ -285,20 +285,20 @@
         getCost: () => ({
             gold: 1000000
         }),
-    },{
+    },{ // Changed
         id: 'precisionTraining2',
         name: 'Fighting skills 2',
         type: 'book',
-        description: 'Purchase book learn your creatures to be 50% more precise',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
         isUnlocked: () => ShopItems.purchased.precisionTraining,
         getCost: () => ({
             gold: 900000
         }),
-    },{
+    },{ // Changed
         id: 'precisionTraining3',
         name: 'Fighting skills 3',
         type: 'book',
-        description: 'Purchase book learn your creatures to be 50% more precise',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
         isUnlocked: () => ShopItems.purchased.precisionTraining2,
         getCost: () => ({
             gold: 8100000
@@ -742,6 +742,237 @@
 
     }
 
+    // Unique ID creation requires a high quality random # generator. In the browser we therefore
+    // require the crypto API and do not support built-in fallback to lower quality random number
+    // generators (like Math.random()).
+    let getRandomValues;
+    const rnds8 = new Uint8Array(16);
+    function rng() {
+      // lazy load so that environments that need to polyfill have a chance to do so
+      if (!getRandomValues) {
+        // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
+        getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
+
+        if (!getRandomValues) {
+          throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
+        }
+      }
+
+      return getRandomValues(rnds8);
+    }
+
+    /**
+     * Convert array of 16 byte values to UUID string format of the form:
+     * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+     */
+
+    const byteToHex = [];
+
+    for (let i = 0; i < 256; ++i) {
+      byteToHex.push((i + 0x100).toString(16).slice(1));
+    }
+
+    function unsafeStringify(arr, offset = 0) {
+      // Note: Be careful editing this code!  It's been tuned for performance
+      // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+      return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+    }
+
+    const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+    var native = {
+      randomUUID
+    };
+
+    function v4(options, buf, offset) {
+      if (native.randomUUID && !buf && !options) {
+        return native.randomUUID();
+      }
+
+      options = options || {};
+      const rnds = options.random || (options.rng || rng)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+
+      rnds[6] = rnds[6] & 0x0f | 0x40;
+      rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
+
+      if (buf) {
+        offset = offset || 0;
+
+        for (let i = 0; i < 16; ++i) {
+          buf[offset + i] = rnds[i];
+        }
+
+        return buf;
+      }
+
+      return unsafeStringify(rnds);
+    }
+
+    class CreatureJobsPresets {
+
+        static state = {
+            presets: [],
+            edited: null,
+            activePreset: '',
+            autoDistribute: true,
+        }
+
+        static initialize(isBannerPrestige) {
+            if(!isBannerPrestige || !CreatureJobsPresets.state) {
+                CreatureJobsPresets.state = {
+                    presets: [],
+                    edited: null,
+                    activePreset: '',
+                };
+            }
+            return CreatureJobsPresets.state;
+        }
+
+        static initializePreset() {
+            return {
+                name: 'New Preset',
+                jobsRules: [{
+                    id: "supporter",
+                    percentage: 70,
+                },{
+                    id: "miner",
+                    percentage: 25,
+                },{
+                    id: "mage",
+                    percentage: 5,
+                }],
+            }
+        }
+
+        static setUsedPreset(id) {
+            CreatureJobsPresets.state.activePreset = id;
+        }
+
+        static setAutoDistribute(flag) {
+            CreatureJobsPresets.state.autoDistribute = flag;
+        }
+
+        static validateNormalizeRules(jobsRules) {
+            const jobsUnlocked = jobsData.filter(one => one.isUnlocked());
+            const validatedRules = [];
+            let totalPercentage = 0;
+            jobsRules.forEach(rule => {
+                if(!jobsUnlocked.find(job => job.id === rule.id)) {
+                    return;
+                }
+                totalPercentage += rule.percentage;
+                validatedRules.push(rule);
+            });
+            if(totalPercentage > 100) {
+                for(let i = 0; i < validatedRules.length; i++) {
+                    validatedRules[i].percentage *= 100 / totalPercentage;
+                }
+            }
+            return validatedRules;
+        }
+
+        static savePreset(isNew, data) {
+            let id = data.id;
+            if(isNew) {
+                id = v4();
+            }
+            if(!id) {
+                console.error('id is required in existing preset');
+                return;
+            }
+            const existingWithName = CreatureJobsPresets.state.presets.find(one => one.id !== id && one.name === data.name);
+            if(existingWithName) {
+                console.error('Preset with such name already exists');
+                return;
+            }
+            let objToSave = {
+                id,
+                name: data.name,
+                jobsRules: CreatureJobsPresets.validateNormalizeRules(data.jobsRules)
+            };
+            let foundIndex = CreatureJobsPresets.state.presets.findIndex(one => one.id === id);
+            if(foundIndex < 0) {
+                CreatureJobsPresets.state.presets.push(objToSave);
+            } else {
+                CreatureJobsPresets.state.presets[foundIndex] = objToSave;
+            }
+            console.log('newPresets: ', CreatureJobsPresets.state.presets);
+        }
+
+        static assignAccordingToPreset(currentJobs, freeWorkers) {
+            const total = CreatureBasic.numCreatures;
+            let reassignable = total;
+            if(!CreatureJobsPresets.state.activePreset) return;
+            const preset = CreatureJobsPresets.state.presets.find(one => one.id === CreatureJobsPresets.state.activePreset);
+            if(!preset) return;
+            const rules = preset.jobsRules;
+
+            const newJobs = {};
+
+            const jobsUnlocked = jobsData.filter(one => one.isUnlocked());
+
+            let partials = 0;
+
+            let minimums = rules.reduce((acc, one) => acc + (one.minAmount || 0), 0);
+
+            let perPercent = 0;
+
+            jobsUnlocked.forEach((job) => {
+                const foundRule = rules.find(one => one.id === job.id);
+                if(!foundRule) {
+                    newJobs[job.id] = 0;
+                    return;
+                }
+                if(foundRule.minAmount) {
+                    const percentageBased = Math.floor((foundRule.percentage || 0) * total / 100);
+                    const delta = Math.min(foundRule.minAmount, total * (foundRule.minAmount / minimums));
+                    const deltaInt = Math.floor(delta);
+                    if(percentageBased < deltaInt) {
+                        perPercent += (foundRule.percentage || 0);
+                        reassignable -= deltaInt;
+                    }
+                    newJobs[job.id] = deltaInt;
+                    // console.log(`JobId: ${job.id} = ${newJobs[job.id]}: `, foundRule, delta, deltaInt, minimums);
+                }
+
+            });
+
+            // console.log('reassignable: ', reassignable, perPercent, newJobs);
+
+            jobsUnlocked.forEach((job) => {
+                // sooo...
+                const foundRule = rules.find(one => one.id === job.id);
+                if(!foundRule) {
+                    newJobs[job.id] = 0;
+                    return;
+                }
+                // const percentageBased = reassignable * foundRule.percentage / 100;
+                const multed = reassignable * (foundRule.percentage || 0) / (100 - perPercent);
+                newJobs[job.id] = newJobs[job.id] && newJobs[job.id] > multed ? newJobs[job.id] : multed;
+                partials += (newJobs[job.id]) % 1;
+                newJobs[job.id] = Math.floor(newJobs[job.id]);
+                // console.log(`mlted: ${job.id}`, multed, reassignable, foundRule.percentage || 0, perPercent);
+            });
+            // console.log('asgn: ', partials, newJobs);
+            if(partials > 0) {
+                let index = 0;
+                while (partials > 1.e-2 && index < rules.length) {
+                    newJobs[rules[index].id]++;
+                    index++;
+                    partials--;
+                }
+            }
+            return { newJobs, expectedFree: total - Object.values(newJobs).reduce((acc, item) => acc + item, 0) };
+        }
+
+        static getState() {
+            return {
+                ...CreatureJobsPresets.state,
+                defaultPreset: CreatureJobsPresets.initializePreset(),
+            }
+        }
+
+    }
+
     class CreatureJobs {
 
         static workers = {};
@@ -822,6 +1053,30 @@
             CreatureJobs.workers[id].current += amount;
         }
 
+        static reDistributeJobs() {
+            const free = CreatureJobs.getFreeWorkers();
+            const newJobsSet = CreatureJobsPresets.assignAccordingToPreset(
+                CreatureJobs.workers,
+                free,
+            );
+            if(newJobsSet && newJobsSet.newJobs) {
+                // console.log('newJobs: ', newJobsSet.newJobs);
+                for(let key in newJobsSet.newJobs) {
+                    if(!CreatureJobs.workers[key]) {
+                        CreatureJobs.workers[key] = {};
+                    }
+                    CreatureJobs.workers[key].current = newJobsSet.newJobs[key];
+                }
+            }
+        }
+
+        static updatePreset(id) {
+            CreatureJobsPresets.setUsedPreset(id);
+            if(id) {
+                CreatureJobs.reDistributeJobs();
+            }
+        }
+
         static getList() {
             const free = CreatureJobs.getFreeWorkers();
             const jobs = jobsData.map(one => {
@@ -840,7 +1095,8 @@
             });
             return {
                 free,
-                jobs
+                jobs,
+                presets: CreatureJobsPresets.getState(),
             }
         }
 
@@ -864,7 +1120,7 @@
         }
 
         static process(dT) {
-            CreatureJobs.getFreeWorkers();
+            const free = CreatureJobs.getFreeWorkers();
             Object.entries(CreatureJobs.workers).forEach(([jobId, state]) => {
                 const jobData = jobsData.find(one => one.id === jobId);
                 const potCost = jobData.getCost(state.current);
@@ -879,9 +1135,10 @@
                 }
                 CreatureJobs.workers[jobId].efficiency = efficiency;
                 BasicResources.checkResourcesAvailable(potCost);
-                if(efficiency < 1 && jobData.isUnstable) {
+                if(efficiency < 1 && jobData.isUnstable && CreatureJobs.workers[jobId].current > 0) {
                     CreatureJobs.workers[jobId].current = Math.max(0, CreatureJobs.workers[jobId].current - 1);
                     CreatureBasic.numCreatures--;
+                    console.log(`Lost 1 creature from job: ${jobId}`, jobData, efficiency);
                 } /* else
                 if(hasEnough.totalPercentage < dT && CreatureJobs.workers[jobId].current > 0) { // won't be able to afford, skip
                     CreatureJobs.workers[jobId].skip = true;
@@ -897,8 +1154,27 @@
                     BasicResources.addBatch(CreatureJobs.workers[jobId].prodThisTick);
                     BasicResources.subtractBatch(CreatureJobs.workers[jobId].consThisTick);
                 }
-
             });
+            if(free) {
+                const id = CreatureJobsPresets.state.activePreset;
+                if(id && CreatureJobsPresets.state.autoDistribute) {
+                    const newJobsSet = CreatureJobsPresets.assignAccordingToPreset(
+                        CreatureJobs.workers,
+                        free,
+                    );
+                    if(newJobsSet && newJobsSet.newJobs && newJobsSet.expectedFree < free) {
+                        console.log('reassigning creeps: ', newJobsSet);
+                        for(let key in newJobsSet.newJobs) {
+                            for(let key in newJobsSet.newJobs) {
+                                if(!CreatureJobs.workers[key]) {
+                                    CreatureJobs.workers[key] = {};
+                                }
+                                CreatureJobs.workers[key].current = newJobsSet.newJobs[key];
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         static sendToUI() {
@@ -987,6 +1263,20 @@
             stone: 20 * Math.pow(2, level) * buildingCostModifier('materials'),
         }),
         getEmbedMemoryCost: (amount) => 10*Math.pow(2, amount),
+        category: 'Military',
+    },{
+        id: 'lab',
+        name: 'Military Lab',
+        description: 'Each level increase your alchemists efficiency by 10%',
+        getConstructionAmount: (level) => 500000 * Math.pow(2, level),
+        getTerritoryAmount: (level) => 10 * Math.pow(2, level) * buildingCostModifier('territory'),
+        isUnlocked: () => BasicBuilding.getBuildingLevel('warehouse') > 0 && BasicResearch.getResearchLevel('chemistry') > 0,
+        getCost: (level) => ({
+            gold: 4.e+13 * Math.pow(2, level) * buildingCostModifier('gold'),
+            wood: 1.e+9 * Math.pow(2, level) * buildingCostModifier('materials'),
+            stone: 2.e+9 * Math.pow(2, level) * buildingCostModifier('materials'),
+        }),
+        getEmbedMemoryCost: (amount) => 120*Math.pow(2, amount),
         category: 'Military',
     },{
         id: 'academy',
@@ -1349,6 +1639,362 @@
         return hDisplay + mDisplay + sDisplay;
     }
 
+    const heirloomEffects = [{
+        id: 'greediness',
+        name: 'greediness',
+        isUnlocked: () => true,
+        base: 0.02,
+        getText: (amount) => `+${fmtVal(amount*100)}% to gold income`
+    },{
+        id: 'saving',
+        name: 'saving',
+        isUnlocked: () => true,
+        base: 0.02,
+        getText: (amount) => `+${fmtVal(amount*100)}% to gold maximum`
+    },{
+        id: 'soulharvest',
+        name: 'soulharvest',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to souls gained`
+    },{
+        id: 'energy',
+        name: 'energy',
+        isUnlocked: () => true,
+        base: 0.02,
+        getText: (amount) => `+${fmtVal(amount*100)}% to maximum energy`
+    },{
+        id: 'magic',
+        name: 'magic',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to maximum mana`
+    },{
+        id: 'agression',
+        name: 'aggression',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to creatures attack`
+    },{
+        id: 'resilience',
+        name: 'resilience',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to creatures HP`
+    },{
+        id: 'precision',
+        name: 'precision',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to fighters precision`
+    },{
+        id: 'evasion',
+        name: 'evasion',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to fighters evasion`
+    },{
+        id: 'creation',
+        name: 'creation',
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to building speed`
+    },{
+        id: 'expansion',
+        name: 'expansion',
+        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to territory gain`
+    },{
+        id: 'flasks',
+        name: 'alchemist',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to flasks production`
+    },{
+        id: 'blacksmith',
+        name: 'blacksmith',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to blacksmith production`
+    },{
+        id: 'armorer',
+        name: 'armorer',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to armorer production`
+    },{
+        id: 'intellect',
+        name: 'intellect',
+        isUnlocked: () => true,
+        base: 0.01,
+        getText: (amount) => `+${fmtVal(amount*100)}% to research points production`
+    }];
+
+    class HeirloomGenerator {
+
+        static generateHeirloomStats(level, tier, quality = 1) {
+            const bonuses = [];
+            Array.from({ length: tier+1 }).forEach(() => {
+                const available = heirloomEffects.filter(one => one.isUnlocked() && !bonuses.some(bonus => bonus.id === one.id));
+                const index = Math.floor(Math.random()*available.length);
+                const effect = available[index];
+                const eff = (0.4 * Math.random() + 0.8) * level * effect.base;
+                bonuses.push({
+                    id: effect.id,
+                    name: effect.name,
+                    weight: effect.weight,
+                    amount: eff,
+                    text: effect.getText(eff * quality)
+                });
+            });
+            return bonuses;
+        }
+
+        static reRollBonus(hr, bonusIndex) {
+            const pTries = hr.bonuses[bonusIndex].rollTries || 0;
+            hr.bonuses.splice(bonusIndex, 1);
+            const available = heirloomEffects.filter(one => one.isUnlocked() && !hr.bonuses.some(bonus => bonus.id === one.id));
+            const index = Math.floor(Math.random()*available.length);
+            const effect = available[index];
+            const eff = (0.4 * Math.random() + 0.8) * hr.level * effect.base;
+            hr.bonuses.push({
+                id: effect.id,
+                name: effect.name,
+                weight: effect.weight,
+                amount: eff,
+                text: effect.getText(eff * hr.quality),
+                rollTries: pTries + 1,
+            });
+            hr.name = HeirloomGenerator.generateName(hr);
+            return hr;
+        }
+
+        static chargeHeirloom(hr, times) {
+            if(!hr.quality) {
+                hr.quality = 1.;
+            }
+            hr.quality += times * 0.01;
+            hr.bonuses.forEach((bonus, index) => {
+                const effect = heirloomEffects.find(one => one.id === bonus.id);
+                hr.bonuses[index].text = effect.getText(bonus.amount * hr.quality);
+            });
+            return hr;
+        }
+
+        static generateSuffix(bonuses) {
+            let b = [...bonuses];
+            const trailing = b.pop();
+            if(!b.length) return trailing.name;
+            return `${b.map(({ name }) => name).join(', ')} and ${trailing.name}`;
+        }
+
+        static generatePreffix(tier) {
+            switch (tier) {
+                case 0:
+                    return 'Normal ';
+                case 1:
+                    return 'Empowered ';
+                case 2:
+                    return 'Rare ';
+                case 3:
+                    return 'Epic ';
+                case 4:
+                    return 'Legendary ';
+                case 5:
+                    return 'Ethereal ';
+            }
+        }
+
+        static generateName(hr) {
+            return `${HeirloomGenerator.generatePreffix(hr.tier)} talisman of ${HeirloomGenerator.generateSuffix(hr.bonuses)}`
+        }
+
+        static generateHeirloom(level, tier) {
+            const bonuses = HeirloomGenerator.generateHeirloomStats(level, tier);
+            const name = `${HeirloomGenerator.generatePreffix(tier)} talisman of ${HeirloomGenerator.generateSuffix(bonuses)}`;
+            return {
+                level,
+                tier,
+                name,
+                bonuses,
+                quality: 1,
+            }
+        }
+
+        static generateProbabilityBased(level, prob) {
+            const rn = Math.random();
+            if(rn < prob) {
+                const tr = Math.floor(4 * Math.pow(Math.random(), 8));
+                const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
+                return heirloom;
+            }
+            return null;
+        }
+
+        static generateProbabilityBasedFromBoss(level, prob) {
+            const rn = Math.random();
+            if(rn < prob) {
+                const tr = 1 + Math.floor(4 * Math.pow(Math.random(), 8));
+                const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
+                return heirloom;
+            }
+            return null;
+        }
+
+        static generateChargeStonesLoot(level) {
+            if(BasicResearch.getResearchLevel('heirloomCharging') <= 0) return 0;
+            const chance = 0.002 * (1 + 0.05*BasicResearch.getResearchLevel('heirloomCharging'));
+            if(Math.random() < chance) {
+                return Math.floor(1 + Math.pow(level, 1.2) / 200);
+            }
+        }
+
+    }
+
+    const temperData = [{
+        id: 'saving',
+        name: 'Saving',
+        description: 'Increase maximum gold by 50 + 25%. Increase gold income by 20%. Start with bargaining purchased',
+        isUnlocked: () => true,
+        onStartRun: () => {
+            ShopItems.purchased['bargaging'] = 1;
+        }
+    },{
+        id: 'energetic',
+        name: 'Energetic',
+        description: 'Increase maximum energy by 20 + 25%. Increase energy income by 20%. Start with 10 training stamina performed',
+        isUnlocked: () => true,
+        onStartRun: () => {
+            BasicActions.actions['physicalTraining'] = { performed: 10, cooldown: 0 };
+        }
+    },{
+        id: 'spiritual',
+        name: 'Spiritual',
+        description: 'Increase maximum mana by 10 + 25%. Increase mana income by 20%.',
+        isUnlocked: () => true,
+    },{
+        id: 'authoritative',
+        name: 'Authoritative',
+        description: 'Decrease creatures cost by 20%',
+        isUnlocked: () => true,
+    },{
+        id: 'wise',
+        name: 'Wise',
+        description: 'Increase research income by 20%',
+        isUnlocked: () => BasicResearch.isResearchUnlocked(),
+    },{
+        id: 'aggressive',
+        name: 'Aggressive',
+        description: 'Increase fighters stats by 20%. Battles are 10% faster',
+        isUnlocked: () => BasicResearch.getResearchLevel('fighting') > 0,
+    }];
+
+    class BasicTemper {
+
+        static state = {
+            currentId: null,
+            popupShown: false,
+        }
+
+        static initialize() {
+            BasicTemper.state = {
+                currentId: null,
+                popupShown: false,
+            };
+            return BasicTemper.state;
+        }
+
+        static getCurrentTemper = () => {
+            return BasicTemper.state?.currentId;
+        }
+
+        static setCurrentTemper = (id) => {
+            const data = temperData.find(one => one.id === id);
+            if(!data) {
+                throw new Error(`Not found temper by id ${id}`);
+            }
+            BasicTemper.state.currentId = id;
+            BasicTemper.state.popupShown = false;
+            if(data.onStartRun) {
+                data.onStartRun();
+            }
+        }
+
+        static getList = () => {
+            return temperData.map(one => ({
+                id: one.id,
+                name: one.name,
+                description: one.description,
+                isUnlocked: one.isUnlocked(),
+                selected: BasicTemper.state.currentId === one.id,
+            }))
+        }
+
+        static process = () => {
+            if(BasicBanners.hasSomeBanners() && BasicTemper.state.currentId === 'select') {
+                BasicTemper.state.popupShown = true;
+            }
+        }
+
+        static sendToUI = () => {
+            return ColibriWorker.sendToClient('set_temper_state', BasicTemper.getList());
+        }
+
+    }
+
+    class HeirloomCharge {
+
+        static isUnlocked() {
+            return BasicResearch.getResearchLevel('heirloomCharging') > 0;
+        }
+
+        static getPriceBase() {
+            return 1.01;
+        }
+
+        static getPriceMult() {
+            return 1.;
+        }
+
+        static chargePrice(quality, times = 1) {
+            const pN = (quality - 1) * 100;
+            // (mult * Math.pow(base,CreatureBasic.numCreatures)*(Math.pow(base, amt) - 1))/(base-1);
+            return HeirloomCharge.getPriceMult()
+                * Math.pow(HeirloomCharge.getPriceBase(), pN)
+                * (Math.pow(HeirloomCharge.getPriceBase(), times) - 1) / (HeirloomCharge.getPriceBase() - 1);
+        }
+
+        static getMaxChargable(quality) {
+            const stones = BasicResources.resources.chargeStones || 0;
+            const pN = (quality - 1) * 100;
+
+            let base = HeirloomCharge.getPriceBase();
+
+            let mult = HeirloomCharge.getPriceMult();
+
+            return Math.floor(Math.log(1 + stones * (base-1) / (mult * Math.pow(base,pN))) / Math.log(base));
+        }
+
+        static isAvailable(quality, times = 1) {
+            const price = HeirloomCharge.chargePrice(quality, times);
+            const stones = BasicResources.resources.chargeStones || 0;
+            return price <= stones;
+        }
+
+        static getMetaForHeirloom(hr, times) {
+            const max = HeirloomCharge.getMaxChargable(hr.quality);
+            return {
+                isChargeUnlocked: HeirloomCharge.isUnlocked(),
+                isChargeAvailable: HeirloomCharge.isAvailable(hr.quality, times),
+                chargePrice: HeirloomCharge.chargePrice(hr.quality, times),
+                maxAmountChargeable: max,
+                priceForMax: HeirloomCharge.chargePrice(hr.quality, max)
+            }
+        }
+
+    }
+
     class BasicHeirlooms {
 
         static state = {
@@ -1362,7 +2008,7 @@
             if(!BasicHeirlooms.state || !isBannerPrestige) {
                 BasicHeirlooms.state = {
                     applied: [null, null],
-                    saved: [null],
+                    saved: Array.from({ length: BasicHeirlooms.getMaxSaved()}).map(one => null),
                     inventory: [],
                     filterMinTier: 0,
                 };
@@ -1376,7 +2022,7 @@
         }
 
         static getMaxSaved() {
-            return 1;
+            return 1 + BasicResearch.getResearchLevel('compactHeirloom');
         }
 
         static getMaxApplied() {
@@ -1391,7 +2037,7 @@
                 }
                 const ef = item.bonuses.find(one => one.id === id);
                 if(ef) {
-                    total += ef.amount;
+                    total += ef.amount * (item.quality || 1.);
                 }
             });
             return total;
@@ -1416,6 +2062,46 @@
             BasicHeirlooms.state[fromKey][fromIndex] = null;
         }
 
+        static chargeItem(fromKey, fromIndex, times) {
+            if(!HeirloomCharge.isUnlocked()) return;
+
+            if(!BasicHeirlooms.state[fromKey][fromIndex]) {
+                return;
+            }
+
+            let hr = BasicHeirlooms.state[fromKey][fromIndex];
+
+            if(!HeirloomCharge.isAvailable(hr.quality, times)) return;
+
+            const price = HeirloomCharge.chargePrice(hr.quality, times);
+
+            hr = HeirloomGenerator.chargeHeirloom(hr, times);
+
+            BasicResources.subtract('chargeStones', price);
+
+            BasicHeirlooms.state[fromKey][fromIndex] = hr;
+
+        }
+
+        static reRollStat(fromKey, fromIndex, bonusIndex) {
+            if(!BasicHeirlooms.state[fromKey][fromIndex]) {
+                return;
+            }
+            if(!BasicHeirlooms.state[fromKey][fromIndex].bonuses[bonusIndex]) {
+                return;
+            }
+            const stats = BasicHeirlooms.processCalculatedStats(BasicHeirlooms.state[fromKey][fromIndex]);
+
+            if(!stats.bonuses[bonusIndex].isRollAvailable) {
+                return;
+            }
+            const price = stats.bonuses[bonusIndex].rollPrice;
+            if(BasicResources.getResource('memoryStones') >= price) {
+                BasicHeirlooms.state[fromKey][fromIndex] = HeirloomGenerator.reRollBonus(BasicHeirlooms.state[fromKey][fromIndex], bonusIndex);
+                BasicResources.subtract('memoryStones', price);
+            }
+        }
+
         static itemToSlot(fromKey, fromIndex, toKey, toIndex) {
             if(!BasicHeirlooms.state[fromKey][fromIndex]) {
                 return;
@@ -1431,10 +2117,53 @@
             BasicHeirlooms.state[toKey][toIndex] = item;
         }
 
-        static sendToUI() {
-            ColibriWorker.sendToClient('set_heirlooms_state', {
-                ...BasicHeirlooms.state,
+        static processCalculatedStats(heirloom) {
+            if(!heirloom.quality) {
+                heirloom.quality = 1;
+            }
+            const haveRolledIndex = heirloom.bonuses.findIndex(one => !!one.rollTries);
+            heirloom.bonuses.forEach((bonus, index) => {
+                if(BasicResearch.getResearchLevel('crafting')) {
+                    bonus.isRollBlocked = (haveRolledIndex > -1) && (haveRolledIndex !== index);
+                    bonus.isRollAvailable = !bonus.isRollBlocked;
+                    bonus.rollPrice = heirloom.level * Math.pow(5, bonus.rollTries || 0);
+                    bonus.isEnoughStones = bonus.rollPrice <= BasicResources.getResource('memoryStones');
+                } else {
+                    bonus.isRollAvailable = false;
+                    bonus.isRollBlocked = false;
+                }
+                heirloom.bonuses[index] = bonus;
             });
+            return {
+                ...heirloom,
+                ...HeirloomCharge.getMetaForHeirloom(heirloom, 1)
+            };
+        }
+
+        static calculateArray(heirlooms) {
+            return heirlooms.map(one => one === null ? one : BasicHeirlooms.processCalculatedStats(one));
+        }
+
+        static calculateState() {
+            return {
+                ...BasicHeirlooms.state,
+                inventory: BasicHeirlooms.calculateArray(BasicHeirlooms.state.inventory),
+                saved: BasicHeirlooms.calculateArray(BasicHeirlooms.state.saved),
+                applied: BasicHeirlooms.calculateArray(BasicHeirlooms.state.applied)
+            }
+        }
+
+        static process() {
+            if(!BasicHeirlooms.state?.saved) return;
+            const max = BasicHeirlooms.getMaxSaved();
+            if(BasicHeirlooms.state.saved.length < max) {
+                const toAdd = max - BasicHeirlooms.state.saved.length;
+                BasicHeirlooms.state.saved.push(...Array.from({ length: toAdd }).map(one => null));
+            }
+        }
+
+        static sendToUI() {
+            ColibriWorker.sendToClient('set_heirlooms_state', BasicHeirlooms.calculateState());
         }
 
         static heirloomsUnlocked() {
@@ -1531,7 +2260,7 @@
             if(!state) return null;
             if(!data.getEmbedMemoryCost) return null;
             if(state.level <= state.memoryEmbedded) return null;
-            return data.getEmbedMemoryCost(state.memoryEmbedded || 0);
+            return data.getEmbedMemoryCost(state.memoryEmbedded || 0) * Math.pow(0.8, BasicResearch.getResearchLevel('memoryEfficiency'));
         }
 
         static embedStones(id) {
@@ -1733,97 +2462,6 @@
 
         static sendToUI() {
             ColibriWorker.sendToClient('set_buildings_state', BasicBuilding.listAvailable());
-        }
-
-    }
-
-    const temperData = [{
-        id: 'saving',
-        name: 'Saving',
-        description: 'Increase maximum gold by 50 + 25%. Increase gold income by 20%. Start with bargaining purchased',
-        isUnlocked: () => true,
-        onStartRun: () => {
-            ShopItems.purchased['bargaging'] = 1;
-        }
-    },{
-        id: 'energetic',
-        name: 'Energetic',
-        description: 'Increase maximum energy by 20 + 25%. Increase energy income by 20%. Start with 10 training stamina performed',
-        isUnlocked: () => true,
-        onStartRun: () => {
-            BasicActions.actions['physicalTraining'] = { performed: 10, cooldown: 0 };
-        }
-    },{
-        id: 'spiritual',
-        name: 'Spiritual',
-        description: 'Increase maximum mana by 10 + 25%. Increase mana income by 20%.',
-        isUnlocked: () => true,
-    },{
-        id: 'authoritative',
-        name: 'Authoritative',
-        description: 'Decrease creatures cost by 20%',
-        isUnlocked: () => true,
-    },{
-        id: 'wise',
-        name: 'Wise',
-        description: 'Increase research income by 20%',
-        isUnlocked: () => BasicResearch.isResearchUnlocked(),
-    },{
-        id: 'aggressive',
-        name: 'Aggressive',
-        description: 'Increase fighters stats by 20%. Battles are 10% faster',
-        isUnlocked: () => BasicResearch.getResearchLevel('fighting') > 0,
-    }];
-
-    class BasicTemper {
-
-        static state = {
-            currentId: null,
-            popupShown: false,
-        }
-
-        static initialize() {
-            BasicTemper.state = {
-                currentId: null,
-                popupShown: false,
-            };
-            return BasicTemper.state;
-        }
-
-        static getCurrentTemper = () => {
-            return BasicTemper.state?.currentId;
-        }
-
-        static setCurrentTemper = (id) => {
-            const data = temperData.find(one => one.id === id);
-            if(!data) {
-                throw new Error(`Not found temper by id ${id}`);
-            }
-            BasicTemper.state.currentId = id;
-            BasicTemper.state.popupShown = false;
-            if(data.onStartRun) {
-                data.onStartRun();
-            }
-        }
-
-        static getList = () => {
-            return temperData.map(one => ({
-                id: one.id,
-                name: one.name,
-                description: one.description,
-                isUnlocked: one.isUnlocked(),
-                selected: BasicTemper.state.currentId === one.id,
-            }))
-        }
-
-        static process = () => {
-            if(BasicBanners.hasSomeBanners() && BasicTemper.state.currentId === 'select') {
-                BasicTemper.state.popupShown = true;
-            }
-        }
-
-        static sendToUI = () => {
-            return ColibriWorker.sendToClient('set_temper_state', BasicTemper.getList());
         }
 
     }
@@ -2139,25 +2777,83 @@
             }
         }
 
-        static calculateTotalBonus(bonus, level) {
+        static calculateTotalBonus(bonus, level, charge = 1.0) {
             const bonusDB = auraData.find(one => one.id === bonus.id);
-            bonus.effect = bonus.baseEff * (1 + bonus.baseGrowth * level * Math.pow(bonus.expBase, level));
+            bonus.effect = charge * bonus.baseEff * (1 + bonus.baseGrowth * level * Math.pow(bonus.expBase, level));
             bonus.text = bonusDB.effectText(bonus.effect);
             return bonus;
         }
 
         static getRealAuraBonus(auraData) {
+            if(!auraData.charge || Number.isNaN(auraData.charge)) {
+                auraData.charge = 1.0;
+            }
             for(let i = 0; i < auraData.bonuses.length; i++) {
-                auraData.bonuses[i] = AuraStats.calculateTotalBonus(auraData.bonuses[i], auraData.level);
+                auraData.bonuses[i] = AuraStats.calculateTotalBonus(auraData.bonuses[i], auraData.level, auraData.charge);
             }
             return auraData;
         }
 
         static getPlainData(auraData) {
+            if(!auraData.charge || Number.isNaN(auraData.charge)) {
+                auraData.charge = 1.0;
+            }
             const nw = AuraStats.getRealAuraBonus(auraData);
             return {
                 ...nw,
                 bonuses: nw.bonuses.map(({ effect, text }) => ({ effect, text })),
+            }
+        }
+
+    }
+
+    class AurasCharge {
+
+        static isUnlocked() {
+            return BasicResearch.getResearchLevel('auraCharging') > 0;
+        }
+
+        static getPriceBase() {
+            return 1.01;
+        }
+
+        static getPriceMult() {
+            return 1.;
+        }
+
+        static chargePrice(charge, times = 1) {
+            const pN = (charge - 1) * 100;
+            // (mult * Math.pow(base,CreatureBasic.numCreatures)*(Math.pow(base, amt) - 1))/(base-1);
+            return AurasCharge.getPriceMult()
+                * Math.pow(AurasCharge.getPriceBase(), pN)
+                * (Math.pow(AurasCharge.getPriceBase(), times) - 1) / (AurasCharge.getPriceBase() - 1);
+        }
+
+        static getMaxChargable(charge) {
+            const stones = BasicResources.resources.chargeGems || 0;
+            const pN = (charge - 1) * 100;
+
+            let base = AurasCharge.getPriceBase();
+
+            let mult = AurasCharge.getPriceMult();
+
+            return Math.floor(Math.log(1 + stones * (base-1) / (mult * Math.pow(base,pN))) / Math.log(base));
+        }
+
+        static isAvailable(charge, times = 1) {
+            const price = AurasCharge.chargePrice(charge, times);
+            const stones = BasicResources.resources.chargeGems || 0;
+            return price <= stones;
+        }
+
+        static getMetaForAura(hr, times) {
+            const max = AurasCharge.getMaxChargable(hr.charge);
+            return {
+                isChargeUnlocked: AurasCharge.isUnlocked(),
+                isChargeAvailable: AurasCharge.isAvailable(hr.charge, times),
+                chargePrice: AurasCharge.chargePrice(hr.charge, times),
+                maxAmountChargeable: max,
+                priceForMax: AurasCharge.chargePrice(hr.charge, max)
             }
         }
 
@@ -2207,6 +2903,7 @@
                 isTurnedOn: !!BasicAuras.state.activeIndexes.find(one => one.index === index),
                 effort: BasicAuras.state.activeIndexes.find(one => one.index === index)?.effort,
                 index,
+                ...AurasCharge.getMetaForAura(one, 1)
             }));
         }
 
@@ -2239,6 +2936,27 @@
             });
 
             BasicAuras.state.auras.splice(index, 1);
+        }
+
+        static chargeItem(index, times) {
+            if(!AurasCharge.isUnlocked()) return;
+
+            if(index < 0 || index >= BasicAuras.state.auras.length) {
+                return;
+            }
+
+            let aura = BasicAuras.state.auras[index];
+
+            if(!AurasCharge.isAvailable(aura.charge, times)) return;
+
+            const price = HeirloomCharge.chargePrice(aura.charge, times);
+
+            aura.charge += 0.01*times;
+
+            BasicResources.subtract('chargeGems', price);
+
+            BasicAuras.state.auras[index] = aura;
+
         }
 
         static getMax() {
@@ -2415,7 +3133,7 @@
             let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('herbsGarden'))
                 * (1 + BasicHeirlooms.getTotalBonus('flasks'));
 
-            mlt *= 1 + 0.1*BasicResearch.getResearchLevel('herbalism');
+            mlt *= (1 + 0.1*BasicResearch.getResearchLevel('herbalism'));
 
             mlt *= (1 + 0.25 * BasicBuilding.getBuildingLevel('bigGardens'));
 
@@ -2425,7 +3143,7 @@
             let mlt = (1 + 0.1 * BasicBuilding.getBuildingLevel('herbsGarden'))
                 * (1 + BasicHeirlooms.getTotalBonus('herbs'));
 
-            mlt *= 1 + 0.1*BasicResearch.getResearchLevel('herbalism');
+            mlt *= (1 + 0.1*BasicResearch.getResearchLevel('herbalism'));
 
             return mlt;
         }
@@ -2435,9 +3153,9 @@
             if(BasicTemper.getCurrentTemper() === 'wise') {
                 mlt = 1.2;
             }
-            mlt *= 1 + 0.25 * BasicBuilding.getBuildingLevel('greatLibrary');
+            mlt *= (1 + 0.25 * BasicBuilding.getBuildingLevel('greatLibrary'));
 
-            mlt *= 1 + BasicAuras.getEffect('research');
+            mlt *= (1 + BasicAuras.getEffect('research'));
 
             return mlt * (1 + (0.2 + 0.05 * BasicResearch.getResearchLevel('darkExperiments'))
                 * BasicBuilding.getBuildingLevel('academy'))
@@ -2445,7 +3163,7 @@
         if(id === 'ore') {
             let mlt = 1 + 0.1 * BasicBuilding.getBuildingLevel('mine');
 
-            mlt *= 1 + 0.1 * BasicResearch.getResearchLevel('oreMining');
+            mlt *= (1 + 0.1 * BasicResearch.getResearchLevel('oreMining'));
 
             mlt *= 1 + BasicAuras.getEffect('ore');
 
@@ -2490,6 +3208,28 @@
         }
         if(id === 'flasksOfAgility') {
             let mlt = 1 + 0.1 * BasicResearch.getResearchLevel('alchemy');
+
+            mlt *= (1 + 0.2 * BasicResearch.getResearchLevel('chemistry'));
+
+            mlt *= (1 + 0.1 * BasicBuilding.getBuildingLevel('lab'));
+
+            return mlt;
+        }
+        if(id === 'flasksOfEndurance') {
+            let mlt = 1;
+
+            mlt *= (1 + 0.2 * BasicResearch.getResearchLevel('chemistry'));
+
+            mlt *= (1 + 0.1 * BasicBuilding.getBuildingLevel('lab'));
+
+            return mlt;
+        }
+        if(id === 'flasksOfAggression') {
+            let mlt = 1;
+
+            mlt *= (1 + 0.2 * BasicResearch.getResearchLevel('chemistry'));
+
+            mlt *= (1 + 0.1 * BasicBuilding.getBuildingLevel('lab'));
 
             return mlt;
         }
@@ -2940,6 +3680,7 @@
             if(BasicResources.resources.energy <= 0 && CreatureBasic.numCreatures > 0) {
                 const loss = Math.max(1, Math.round(0.1*CreatureBasic.numCreatures));
                 CreatureBasic.numCreatures -= loss;
+                console.log(`Lost ${loss} creatures in post-process`);
                 if(CreatureBasic.numCreatures < 0) {
                     CreatureBasic.numCreatures = 0;
                 }
@@ -3076,7 +3817,7 @@
             return effectCumulative;
         }
 
-        static getOptimalBanners(bannersArray) {
+        static getOptimalBanners(bannersArray, id) {
             const actualEffect = BasicBanners.getBonusByArray(bannersArray);
             // now we need to combine some analytical formula with some numerical magic
             // for this purpose for each banner tier we have to determine if bonus to it
@@ -3085,16 +3826,46 @@
             // so, starting from the end
             for(let iTierCalculated = 5; iTierCalculated > 0; iTierCalculated--) {
                 // let convMult = 1.0;
-                const newBannersArray = [...bannersArray.map(o => ({...o}))];
+                let newBannersArray = [...bannersArray.map(o => ({...o}))];
                 let pEff = actualEffect;
+                let pEffCIter = pEff;
                 for(let iConvertFrom = iTierCalculated-1; iConvertFrom >= 0; iConvertFrom--) {
                     // convMult *= 5;
                     let minus = 0.1 * newBannersArray[iConvertFrom].amount;
                     let plus = minus / 5;
+                    if(iTierCalculated === 2 && id === 'green') {
+                        console.log(`from: ${iConvertFrom} to ${iTierCalculated}`, minus, plus);
+                    }
                     if(plus >= 1) {
                         newBannersArray[iConvertFrom+1].amount += plus;
                         newBannersArray[iConvertFrom].amount -= minus;
-                        const nEff = BasicBanners.getBonusByArray(newBannersArray);
+                        let nEff = BasicBanners.getBonusByArray(newBannersArray);
+                        /*if(iTierCalculated === 2 && id === 'green') {
+                            console.log(`Bonus from: ${iConvertFrom} to ${iTierCalculated}`, nEff, pEffCIter, newBannersArray);
+                        }*/
+                        let pIterBanner = newBannersArray;
+                        if(nEff > pEffCIter) {
+                            while (nEff > pEffCIter) {
+                                let minus = 0.1 * newBannersArray[iConvertFrom].amount;
+                                let plus = minus / 5;
+                                if(plus < 1) {
+                                    break;
+                                }
+                                pEffCIter = nEff;
+                                pIterBanner = [...newBannersArray.map(o => ({ ...o }))];
+                                newBannersArray[iConvertFrom+1].amount += plus;
+                                newBannersArray[iConvertFrom].amount -= minus;
+                                nEff = BasicBanners.getBonusByArray(newBannersArray);
+                                /*if(iTierCalculated === 2 && id === 'green') {
+                                    console.log(`inner bonus: from: ${iConvertFrom} to ${iTierCalculated}`, nEff, pEffCIter, newBannersArray);
+                                }*/
+                            }
+                            if(pEffCIter > nEff) {
+                                nEff = pEffCIter;
+                                newBannersArray = pIterBanner;
+                            }
+                        }
+
                         if(nEff > pEff) {
                             return {
                                 newBannersArray,
@@ -3105,6 +3876,7 @@
                                 plus
                             }
                         }
+                        pEffCIter = nEff;
                     }
 
                 }
@@ -3145,9 +3917,11 @@
 
                 let effIfConverted = 1;
 
-                const optimal = BasicBanners.getOptimalBanners(BasicBanners.banners[bannerInfo.id]);
+                const optimal = BasicBanners.getOptimalBanners(BasicBanners.banners[bannerInfo.id], bannerInfo.id);
 
-                // console.log('optimal: ', bannerInfo.id, optimal);
+                /* if(bannerInfo.id === 'green') {
+                    console.log('optimal: ', bannerInfo.id, optimal);
+                } */
 
                 Array.from({length: 6}).forEach((one, tierIndex) => {
                     const current = BasicBanners.banners[bannerInfo.id][5-tierIndex];
@@ -3722,6 +4496,83 @@
         critChance: 0.2,
         critMult: 3,
     },{
+        name: 'Perfect Ghost Warrior',
+        quantity: 1,
+        damage: 4.72e+18,
+        maxHP: 2.47e+24,
+        defense: 5.e+16,
+        armor: 5.e+17,
+        accuracy: 7.2e+19,
+        evasion: 3.6e+19,
+        critChance: 0.1,
+        critMult: 4,
+    },{
+        name: 'Perfect Ghost Swordsman',
+        quantity: 1,
+        damage: 9.72e+18,
+        maxHP: 6.43e+24,
+        defense: 2.e+17,
+        armor: 2.e+18,
+        accuracy: 1.2e+20,
+        evasion: 6.6e+19,
+        critChance: 0.4,
+        critMult: 3,
+    },{
+        name: 'Perfect Ghost Axeman',
+        quantity: 1,
+        damage: 2.72e+19,
+        maxHP: 1.43e+25,
+        defense: 2.e+17,
+        armor: 2.e+18,
+        accuracy: 3.2e+20,
+        evasion: 1.1e+20,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Perfect Ghost Spearman',
+        quantity: 1,
+        damage: 2.72e+20,
+        maxHP: 1.43e+25,
+        defense: 2.e+17,
+        armor: 2.e+18,
+        accuracy: 3.2e+20,
+        evasion: 1.1e+20,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Perfect Ghost Paladin',
+        quantity: 1,
+        damage: 2.42e+20,
+        maxHP: 1.43e+26,
+        defense: 2.e+18,
+        armor: 2.e+19,
+        accuracy: 7.2e+20,
+        evasion: 2.1e+20,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Perfect Ghost Pikeman',
+        quantity: 1,
+        damage: 7.65e+20,
+        maxHP: 5.25e+26,
+        defense: 2.e+18,
+        armor: 7.e+18,
+        accuracy: 3.2e+21,
+        evasion: 4.1e+20,
+        critChance: 0.2,
+        critMult: 4,
+    },{
+        name: 'Perfect Ghost Champion',
+        quantity: 1,
+        damage: 2.72e+21,
+        maxHP: 2.43e+27,
+        defense: 2.e+19,
+        armor: 2.e+19,
+        accuracy: 3.2e+21,
+        evasion: 1.1e+21,
+        critChance: 0.2,
+        critMult: 4,
+    },{
         name: 'Azragard',
         quantity: 1,
         damage: 1.e+56,
@@ -4055,175 +4906,6 @@
 
     }
 
-    const heirloomEffects = [{
-        id: 'greediness',
-        name: 'greediness',
-        isUnlocked: () => true,
-        base: 0.02,
-        getText: (amount) => `+${fmtVal(amount*100)}% to gold income`
-    },{
-        id: 'saving',
-        name: 'saving',
-        isUnlocked: () => true,
-        base: 0.02,
-        getText: (amount) => `+${fmtVal(amount*100)}% to gold maximum`
-    },{
-        id: 'soulharvest',
-        name: 'soulharvest',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to souls gained`
-    },{
-        id: 'energy',
-        name: 'energy',
-        isUnlocked: () => true,
-        base: 0.02,
-        getText: (amount) => `+${fmtVal(amount*100)}% to maximum energy`
-    },{
-        id: 'magic',
-        name: 'magic',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to maximum mana`
-    },{
-        id: 'agression',
-        name: 'aggression',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to creatures attack`
-    },{
-        id: 'resilience',
-        name: 'resilience',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to creatures HP`
-    },{
-        id: 'precision',
-        name: 'precision',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to fighters precision`
-    },{
-        id: 'evasion',
-        name: 'evasion',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to fighters evasion`
-    },{
-        id: 'creation',
-        name: 'creation',
-        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to building speed`
-    },{
-        id: 'expansion',
-        name: 'expansion',
-        isUnlocked: () => BasicResearch.getResearchLevel('building') > 0,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to territory gain`
-    },{
-        id: 'flasks',
-        name: 'alchemist',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to flasks production`
-    },{
-        id: 'blacksmith',
-        name: 'blacksmith',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to blacksmith production`
-    },{
-        id: 'armorer',
-        name: 'armorer',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to armorer production`
-    },{
-        id: 'intellect',
-        name: 'intellect',
-        isUnlocked: () => true,
-        base: 0.01,
-        getText: (amount) => `+${fmtVal(amount*100)}% to research points production`
-    }];
-
-    class HeirloomGenerator {
-
-        static generateHeirloomStats(level, tier) {
-            const bonuses = [];
-            Array.from({ length: tier+1 }).forEach(() => {
-                const available = heirloomEffects.filter(one => one.isUnlocked() && !bonuses.some(bonus => bonus.id === one.id));
-                const index = Math.floor(Math.random()*available.length);
-                const effect = available[index];
-                const eff = (0.4 * Math.random() + 0.8) * level * effect.base;
-                bonuses.push({
-                    id: effect.id,
-                    name: effect.name,
-                    weight: effect.weight,
-                    amount: eff,
-                    text: effect.getText(eff)
-                });
-            });
-            return bonuses;
-        }
-
-        static generateSuffix(bonuses) {
-            let b = [...bonuses];
-            const trailing = b.pop();
-            if(!b.length) return trailing.name;
-            return `${b.map(({ name }) => name).join(', ')} and ${trailing.name}`;
-        }
-
-        static generatePreffix(tier) {
-            switch (tier) {
-                case 0:
-                    return 'Normal ';
-                case 1:
-                    return 'Empowered ';
-                case 2:
-                    return 'Rare ';
-                case 3:
-                    return 'Epic ';
-                case 4:
-                    return 'Legendary ';
-                case 5:
-                    return 'Ethereal ';
-            }
-        }
-
-        static generateHeirloom(level, tier) {
-            const bonuses = HeirloomGenerator.generateHeirloomStats(level, tier);
-            const name = `${HeirloomGenerator.generatePreffix(tier)} talisman of ${HeirloomGenerator.generateSuffix(bonuses)}`;
-            return {
-                level,
-                tier,
-                name,
-                bonuses
-            }
-        }
-
-        static generateProbabilityBased(level, prob) {
-            const rn = Math.random();
-            if(rn < prob) {
-                const tr = Math.floor(4 * Math.pow(Math.random(), 8));
-                const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
-                return heirloom;
-            }
-            return null;
-        }
-
-        static generateProbabilityBasedFromBoss(level, prob) {
-            const rn = Math.random();
-            if(rn < prob) {
-                const tr = 1 + Math.floor(4 * Math.pow(Math.random(), 8));
-                const heirloom = HeirloomGenerator.generateHeirloom(level, tr);
-                return heirloom;
-            }
-            return null;
-        }
-
-    }
-
     class AurasGenerator {
 
         static generateAuraStats(quality, tier) {
@@ -4298,6 +4980,14 @@
                 return aura;
             }
             return null;
+        }
+
+        static generateChargeGemsLoot(level) {
+            if(BasicResearch.getResearchLevel('auraCharging') <= 0) return 0;
+            const chance = 0.002 * (1 + 0.05*BasicResearch.getResearchLevel('auraCharging'));
+            if(Math.random() < chance) {
+                return Math.floor(1 + Math.pow(level, 1.2) / 200);
+            }
         }
 
     }
@@ -4422,6 +5112,14 @@
                                 console.log('AWARDED HEIRLOOM: ', hr);
                             }
                         }
+                        const stones = HeirloomGenerator.generateChargeStonesLoot(BasicMap.state.level);
+                        if(stones > 0) {
+                            BasicResources.add('chargeStones', stones);
+                        }
+                        const gems = AurasGenerator.generateChargeGemsLoot(BasicMap.state.level);
+                        if(gems > 0) {
+                            BasicResources.add('chargeGems', gems);
+                        }
                         if(BasicResearch.getResearchLevel('auras') > 0 && BasicMap.state.level > -1) {
                             // TODO: change probability
                             const aura = AurasGenerator.generateProbabilityBased(0.003);
@@ -4539,10 +5237,10 @@
         getCost: (level) => ({
             research: 10*Math.pow(2, level),
         }),
-    },{
+    },{ // Changed
         id: 'bannersMasterity',
         name: 'Banners Masterity',
-        description: 'Improves your banners effect exponenta over amount by 0.01',
+        description: 'Improves your banners effect exponental over amount by 0.01',
         isUnlocked: () => BasicResearch.getTotal('soulEater') > 2,
         maxLevel: 15,
         getCost: (level) => ({
@@ -4613,10 +5311,10 @@
         getCost: (level) => ({
             research: 50000*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'building',
         name: 'Building',
-        description: 'Unlocks building. Each level increase builder efficiency by 20%. Level 5 unlocks new banner.',
+        description: 'Unlocks building. Each level increases builder efficiency by 20%. Level 5 unlocks a new banner.',
         isUnlocked: () => BasicResearch.getTotal('fighting') > 0 && BasicMap.state.zonesAmounts[0] > 0,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4631,10 +5329,10 @@
         getCost: (level) => ({
             research: 500000*Math.pow(3, level),
         }),
-    },{
+    },{ 
         id: 'advancedAutomation',
         name: 'Advanced Automation',
-        description: 'Unlocks auto-purchase for items you have ever purchased over previous resets.',
+        description: 'Unlocks auto-purchase for items you have purchased in previous resets.',
         isUnlocked: () => BasicResearch.getTotal('economy') > 9,
         maxLevel: 1,
         getCost: (level) => ({
@@ -4686,10 +5384,10 @@
         getCost: (level) => ({
             research: 10000000*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'resilience',
         name: 'Resilience',
-        description: 'New training techniques for your warriors allows to increase their vitality. +1 base HP to your creatures per level. (multiplied by other bonuses)',
+        description: 'New training techniques allows your warriors to increase their vitality. +1 base HP to your creatures per level. (multiplied by other bonuses)',
         isUnlocked: () => BasicResearch.getTotal('combatTactics') > 2,
         maxLevel: 10,
         getCost: (level) => ({
@@ -4698,7 +5396,7 @@
     },{
         id: 'looting',
         name: 'Looting',
-        description: 'Increase fighting loot by 25%. Level 5 unlocks new research',
+        description: 'Increase souls loot in fighting by 25%. Level 5 unlocks new research',
         isUnlocked: () => BasicResearch.getTotal('combatLogistics') > 2,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4758,55 +5456,64 @@
         getCost: (level) => ({
             research: 1.e+10*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'architecture',
         name: 'Architecture',
-        description: 'Allows you building mega structures that persists through resets',
+        description: 'Allows you to build mega structures that persists through resets',
         isUnlocked: () => BasicResearch.getTotal('building') > 6,
         maxLevel: 1,
         getCost: (level) => ({
             research: 1.e+10*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'oreMining',
         name: 'Ore Mining',
-        description: 'Unlock ore mining and refining. Each level improve mining efficiency by 10%',
+        description: 'Unlock ore mining and refining. Each level improves mining efficiency by 10%',
         isUnlocked: () => BasicResearch.getTotal('motivation') > 2,
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+10*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'alchemy',
         name: 'Alchemy',
-        description: 'Unlock alchemists job. Can convert your flasks to something more efficient. Each level improves alchemist efficiency by 10%. Level 10 unlock new research',
+        description: 'Unlock alchemists job. Can convert your flasks to something more efficient. Each level improves alchemist efficiency by 10%. Level 10 unlocks new research',
         isUnlocked: () => BasicResearch.getTotal('motivation') > 2,
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+10*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'auras',
         name: 'Auras',
-        description: 'Unlock new way of your power improvement - auras. Can be find in maps. Each level add new active aura slot',
+        description: 'Unlocks new way for your power improvement - auras. Can be found in maps. Each level add new active aura slot',
         isUnlocked: () => BasicResearch.getTotal('looting') > 4,
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+12*Math.pow(1000, level*level),
         }),
-    },{
+    },{ // Changed
+        id: 'compactHeirloom',
+        name: 'Heirloom Compactification',
+        description: 'Each level adds +1 slot to saved heirlooms',
+        isUnlocked: () => BasicResearch.getTotal('looting') > 4,
+        maxLevel: 3,
+        getCost: (level) => ({
+            research: 1.e+15*Math.pow(1000, level*level),
+        }),
+    },{ // Changed
         id: 'levitation',
         name: 'Levitation',
-        description: 'Learn how to move large things with power of mind. Unlocks new megastructures. Each level decrease building time by 5%',
+        description: 'Learn how to move large things with power of mind. Unlocks new megastructures. Each level decreases building time by 5%',
         isUnlocked: () => BasicResearch.getTotal('architecture') > 0,
         maxLevel: 0,
         getCost: (level) => ({
             research: 1.e+12*Math.pow(1000, level*level),
         }),
-    },{
+    },{ // Changed
         id: 'herbalism',
         name: 'Advanced Herbalism',
-        description: 'Unlock building herbs garden, that improves your herbs and flasks output. Each level improves flasks output by 10%',
+        description: 'Unlocks building herbs garden, that improves your herbs and flasks output. Each level improves flasks output by 10%',
         isUnlocked: () => BasicResearch.getTotal('alchemy') > 9,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4830,10 +5537,10 @@
         getCost: (level) => ({
             research: 1.e+18*Math.pow(3, level),
         }),
-    },{
+    },{ // Changed
         id: 'crafting',
         name: 'Crafting',
-        description: 'Each level increase crafting efficiency by 20%. Level 5 unlock new building',
+        description: 'Each level increases crafting efficiency by 20%. Level 5 unlock new building and research',
         isUnlocked: () => BasicResearch.getTotal('memoryStones') > 0,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4853,7 +5560,7 @@
     },{
         id: 'buildingMemory',
         name: 'Parallel Dimension',
-        description: 'Brings your realm to parallel dimension, allowing you embed memory stones into buildings, making them persist through resets',
+        description: 'Brings your realm to parallel dimension, allowing you to embed memory stones into buildings, making them persist through resets',
         isUnlocked: () => BasicResearch.getTotal('territoryMemory') > 0,
         maxLevel: 1,
         getCost: (level) => ({
@@ -4881,7 +5588,7 @@
     },{
         id: 'machinery',
         name: 'Machinery',
-        description: 'Unlocks building Steamworks. In addition, adds one automation slot. Each level increase steamworks efficiency by 20%',
+        description: 'Unlocks building Steamworks. In addition, adds one automation slot. Each level increase steamworks efficiency by 20%. Level 5 and 10 unlocks new research',
         isUnlocked: () => BasicResearch.getTotal('engineering') > 0,
         maxLevel: 0,
         getCost: (level) => ({
@@ -4895,6 +5602,51 @@
         maxLevel: 1,
         getCost: (level) => ({
             research: 1.e+34*Math.pow(3, level),
+        }),
+    },{
+        id: 'memoryEfficiency',
+        name: 'Memory Stones Efficiency',
+        description: 'Decrease memory stones embed costs by 10%',
+        isUnlocked: () => BasicResearch.getTotal('machinery') > 4,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+34*Math.pow(3, level),
+        }),
+    },{ // Changed
+        id: 'heirloomCharging',
+        name: 'Heirloom Charging',
+        description: 'Start dropping charge stones, allowing you to charge your heirlooms. Each level increases charge stones drop chance by 5%',
+        isUnlocked: () => BasicResearch.getTotal('crafting') > 4,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+36*Math.pow(3, level),
+        }),
+    },{ // Changed
+        id: 'auraCharging',
+        name: 'Aura Charging',
+        description: 'Start dropping charge gems, allowing you to charge your auras. Each level increases charge gems drop chance by 5%',
+        isUnlocked: () => BasicResearch.getTotal('heirloomCharging') > 0 && BasicResearch.getResearchLevel('auras') > 0,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+45*Math.pow(3, level),
+        }),
+    },{
+        id: 'advancedLogistics',
+        name: 'Advanced Logistics',
+        description: 'Each warehouse level provides an additional multiplicative 10% bonus to wood, stone, and ore storage',
+        isUnlocked: () => BasicResearch.getTotal('machinery') > 4,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+45*Math.pow(3, level),
+        }),
+    },{
+        id: 'chemistry',
+        name: 'Chemistry',
+        description: 'Unlocks building alchemists lab. Each level improves your alchemists performance by 20%',
+        isUnlocked: () => BasicResearch.getTotal('machinery') > 9,
+        maxLevel: 0,
+        getCost: (level) => ({
+            research: 1.e+45*Math.pow(3, level),
         }),
     }];
 
@@ -6150,7 +6902,10 @@
             )
             * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
             * (1 + 0.2 * BasicResearch.getResearchLevel('logistics'))
-            * (1 + BasicAuras.getEffect('woodMax')),
+            * (1 + BasicAuras.getEffect('woodMax')) * (BasicResearch.getResearchLevel('advancedLogistics')
+                    ? Math.pow(1.1, BasicBuilding.getBuildingLevel('warehouse'))
+                    : 1
+            ),
         getIncome: () => 0,
     },{
         id: 'stone',
@@ -6162,16 +6917,23 @@
             ) * (
             1 + 0.2 * BasicResearch.getResearchLevel('logistics')
         ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
-            * (1 + BasicAuras.getEffect('stoneMax')),
+            * (1 + BasicAuras.getEffect('stoneMax')) * (BasicResearch.getResearchLevel('advancedLogistics')
+                    ? Math.pow(1.1, BasicBuilding.getBuildingLevel('warehouse'))
+                    : 1
+            ),
         getIncome: () => 0,
     },{
         id: 'ore',
         name: 'Ore',
         isUnlocked: () => BasicBuilding.getBuildingLevel('mine') > 0,
-        getMax: () => 2 * BasicBuilding.getBuildingLevel('warehouse') * (
+        getMax: () => (2 * BasicBuilding.getBuildingLevel('warehouse')
+                + 50 * BasicBuilding.getBuildingLevel('harbour')) * (
             1 + 0.2 * BasicResearch.getResearchLevel('logistics')
         ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
-            * (1 + BasicAuras.getEffect('oreMax')),
+            * (1 + BasicAuras.getEffect('oreMax')) * (BasicResearch.getResearchLevel('advancedLogistics')
+                ? Math.pow(1.1, BasicBuilding.getBuildingLevel('warehouse'))
+                : 1
+            ),
         getIncome: () => 0,
     },{
         id: 'tools',
@@ -6215,6 +6977,18 @@
         isUnlocked: () => BasicResearch.getResearchLevel('enhancedAlchemy'),
         getMax: () => 0,
         getIncome: () => 0,
+    },{
+        id: 'chargeStones',
+        name: 'Charge Stone',
+        isUnlocked: () => BasicResearch.getResearchLevel('heirloomCharging'),
+        getMax: () => 0,
+        getIncome: () => 0,
+    },{
+        id: 'chargeGems',
+        name: 'Charge Gem',
+        isUnlocked: () => BasicResearch.getResearchLevel('auraCharging'),
+        getMax: () => 0,
+        getIncome: () => 0,
     }
 
 
@@ -6242,8 +7016,18 @@
             return 1 + 0.015*Math.pow((BasicResources.resources.tools || 0), 0.4)
         }
 
-        static initialize() {
-            BasicResources.resources = {};
+        static initialize(isFromPrestiege = false) {
+            if(!isFromPrestiege) {
+                BasicResources.resources = {};
+            } else {
+                const nres = {
+                    chargeStones: BasicResources.resources?.chargeStones,
+                    chargeGems: BasicResources.resources?.chargeGems,
+                    memoryStones: BasicResources.resources?.memoryStones,
+                };
+                BasicResources.resources = nres;
+            }
+
         }
 
         static add(key, amount) {
@@ -6520,7 +7304,7 @@
             // add potential purchased researches to actual ones
             BasicResearch.onPrestige();
 
-            BasicResources.initialize();
+            BasicResources.initialize(isBannerPrestige);
             BasicActions.init();
             BasicSkills.initialize();
             ShopItems.initialize(isBannerPrestige);
@@ -6531,7 +7315,7 @@
             BasicBuilding.initialize(isBannerPrestige);
             BasicHeirlooms.initialize(isBannerPrestige);
             BasicSettings.initialize(isBannerPrestige);
-
+            CreatureJobsPresets.initialize(isBannerPrestige);
 
             if(BasicRun.interval) {
                 clearInterval(BasicRun.interval);
@@ -6550,6 +7334,7 @@
                 dT = 2 * dt;
             }
             BasicResources.preRun(dT);
+            // ok
             BasicResources.process(dT);
             CreatureJobs.process(dT);
             CreatureBasic.process(dT);
@@ -6562,8 +7347,9 @@
             ShopItems.process(dT);
             BasicAuras.process(dT);
             BasicActions.process(dT);
+            BasicHeirlooms.process();
             CreatureBasic.postProcess(dT);
-
+            // bad
             BasicResources.postProcess(dT);
             BasicRun.timeSpent += dT;
             ColibriWorker.sendToClient('set_general', {
@@ -6606,6 +7392,7 @@
                 shopSettings: ShopItems.settings,
                 numCreatures: CreatureBasic.numCreatures || 0,
                 creatureJobs: CreatureJobs.workers || {},
+                creatureJobsPresets: CreatureJobsPresets.state,
                 creatureSettings: CreatureBasic.settings || { amount: 1 },
                 skills: BasicSkills.skills || {},
                 banners: BasicBanners.banners || BasicBanners.initialize(),
@@ -6646,6 +7433,7 @@
                 amount: 1,
             };
             CreatureJobs.workers = save.creatureJobs || {};
+            CreatureJobsPresets.state = save.creatureJobsPresets || CreatureJobsPresets.initialize();
             BasicSkills.skills = save.skills || {};
             BasicRun.timeSpent = save.general?.timeSpent || 0;
             BasicBanners.banners = save.banners || BasicBanners.initialize();
@@ -6794,6 +7582,22 @@
         CreatureBasic.summonCreature(amount);
     });
 
+    ColibriWorker.on('save_preset', ({ isNew, current }) => {
+        CreatureJobsPresets.savePreset(isNew, current);
+    });
+
+    ColibriWorker.on('use_preset', ({ id }) => {
+        CreatureJobs.updatePreset(id);
+    });
+
+    ColibriWorker.on('toggle_autodistribute', ({ flag }) => {
+        CreatureJobsPresets.setAutoDistribute(flag);
+    });
+
+    ColibriWorker.on('re_distribute', () => {
+        CreatureJobs.reDistributeJobs();
+    });
+
 
     ColibriWorker.on('do_prestige', (id) => {
         console.log('perform prestige', id);
@@ -6867,6 +7671,14 @@
         BasicHeirlooms.dropItem(fromKey, fromIndex);
     });
 
+    ColibriWorker.on('charge_heirloom', ({ fromKey, fromIndex, amount }) => {
+        BasicHeirlooms.chargeItem(fromKey, fromIndex, amount);
+    });
+
+    ColibriWorker.on('re_roll', ({ fromKey, fromIndex, bonusIndex }) => {
+        BasicHeirlooms.reRollStat(fromKey, fromIndex, bonusIndex);
+    });
+
     ColibriWorker.on('change_heirloom_mintier', ({ tierId }) => {
         BasicHeirlooms.setMinTier(tierId);
     });
@@ -6906,6 +7718,11 @@
 
     ColibriWorker.on('drop_aura', ({ index }) => {
         BasicAuras.dropAura(index);
+    });
+
+
+    ColibriWorker.on('charge_aura', ({ index, amount }) => {
+        BasicAuras.chargeItem(index, amount);
     });
 
     ColibriWorker.on('change_aura_effort', ({ index, effort }) => {

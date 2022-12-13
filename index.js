@@ -1357,7 +1357,7 @@
     }, VirtualDOM.createVirtualElement("p", {
       className: 'popup-link',
       onClick: showVersion
-    }, "v0.1.8"), VirtualDOM.createVirtualElement("p", {
+    }, "v0.2.1"), VirtualDOM.createVirtualElement("p", {
       className: 'popup-link',
       onClick: showAbout
     }, "About"), VirtualDOM.createVirtualElement("p", null, VirtualDOM.createVirtualElement("a", {
@@ -1657,7 +1657,7 @@
       }));
     };
 
-    var css_248z$b = ".summon-creature {\r\n    display: flex;\r\n    justify-content: flex-start;\r\n    background: #030304;\r\n    padding: 20px;\r\n    width: 100%;\r\n}\r\n\r\n.summon-creature .change-amount {\r\n    margin-right: 10px;\r\n    margin-left: auto;\r\n}\r\n\r\n.summon-creature .cost-wrap {\r\n    margin-left: 20px;\r\n}\r\n\r\n.work-places {\r\n    background: #030304;\r\n    padding: 10px;\r\n}\r\n\r\n.work-places .job-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n.work-places .job-row > div {\r\n    width: 250px;\r\n}\r\n\r\n.work-places .job-row .actions {\r\n    align-items: center;\r\n    justify-content: space-around;\r\n}\r\n\r\n.creature-notes {\r\n    margin-left: 20px;\r\n    flex: 1;\r\n}\r\n\r\n.creature-name {\r\n    font-size: 14px;\r\n    font-weight: bold;\r\n}\r\n\r\n.summon-wrap {\r\n    min-width: 120px;\r\n    height: 101px;\r\n}\r\n\r\n.categories {\r\n    display: flex;\r\n}\r\n\r\n.categories .popup-link {\r\n    padding: 3px 5px;\r\n}\r\n\r\n.categories .selected {\r\n    color: #ffffff;\r\n}\r\n\r\n.creature-jobs-slider {\r\n    /* width: calc(100% - 40px);\r\n    margin: 5px 20px;*/\r\n    width: 210px;\r\n}\r\n\r\n.summon-buttons button {\r\n    display: block;\r\n    margin: 5px 0;\r\n}\r\n\r\n.creature-notes .red {\r\n    color: #ad2121;\r\n}";
+    var css_248z$b = ".summon-creature {\r\n    display: flex;\r\n    justify-content: flex-start;\r\n    background: #030304;\r\n    padding: 20px;\r\n    width: 100%;\r\n}\r\n\r\n.summon-creature .change-amount {\r\n    margin-right: 10px;\r\n    margin-left: auto;\r\n}\r\n\r\n.summon-creature .cost-wrap {\r\n    margin-left: 20px;\r\n}\r\n\r\n.work-places {\r\n    background: #030304;\r\n    padding: 10px;\r\n}\r\n\r\n.work-places .job-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n.work-places .job-row > div {\r\n    width: 250px;\r\n}\r\n\r\n.work-places .job-row .actions {\r\n    align-items: center;\r\n    justify-content: space-around;\r\n}\r\n\r\n.creature-notes {\r\n    margin-left: 20px;\r\n    flex: 1;\r\n}\r\n\r\n.creature-name {\r\n    font-size: 14px;\r\n    font-weight: bold;\r\n}\r\n\r\n.summon-wrap {\r\n    min-width: 120px;\r\n    height: 101px;\r\n}\r\n\r\n.categories {\r\n    display: flex;\r\n}\r\n\r\n.categories .popup-link {\r\n    padding: 3px 5px;\r\n}\r\n\r\n.categories .selected {\r\n    color: #ffffff;\r\n}\r\n\r\n.creature-jobs-slider {\r\n    /* width: calc(100% - 40px);\r\n    margin: 5px 20px;*/\r\n    width: 210px;\r\n}\r\n\r\n.summon-buttons button {\r\n    display: block;\r\n    margin: 5px 0;\r\n}\r\n\r\n.creature-notes .red {\r\n    color: #ad2121;\r\n}\r\n\r\n.preset-editor-wrap {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    background: #030304;\r\n    padding: 20px;\r\n    width: 100%;\r\n    margin-top: 10px;\r\n    margin-bottom: 10px;\r\n}\r\n\r\n.preset-box {\r\n    background: #030304;\r\n    margin-top: 10px;\r\n    padding: 20px;\r\n}\r\n\r\n.job-preset-row {\r\n    display: flex;\r\n}\r\n\r\n.job-preset-row > p {\r\n    width: 200px;\r\n}\r\n\r\n.preset-editor-wrap .used-preset {\r\n    min-width: 200px;\r\n    flex: 1;\r\n}\r\n\r\n.create-edit {\r\n    min-width: 300px;\r\n}\r\n\r\n.create-edit .edit select {\r\n    margin-right: 10px;\r\n}\r\n\r\n.job-preset-row {\r\n    padding-bottom: 5px;\r\n    padding-top: 5px;\r\n    border-bottom: 1px solid #333;\r\n}\r\n\r\n.preset-box .name {\r\n    padding: 10px 0;\r\n}\r\n\r\n.job-preset-row .rules .label {\r\n    margin-right: 10px;\r\n}\r\n\r\n.used-preset .note .title {\r\n    color: #f1d119;\r\n    font-weight: bold;\r\n}";
     styleInject(css_248z$b);
 
     const summon = amount => {
@@ -1687,6 +1687,128 @@
     ColibriClient.on('set_creatures_jobs_state', payload => {
       State.setState('game.creatures.jobs', payload);
     });
+
+    const setPresetName = name => {
+      State.setState(`game.creatures.ui.editingPreset.name`, name);
+    };
+
+    const setPresetEditedId = id => {
+      console.log('setEditing: ', id);
+      State.setState('game.creatures.ui.editingPresetId', id);
+    };
+
+    const setPresetEdited = id => {
+      const jobs = State.queryState('game.creatures.jobs', {});
+      let currentPresetData;
+
+      if (id) {
+        currentPresetData = jobs.presets?.presets?.find(one => one.id === id);
+      }
+
+      if (!currentPresetData) {
+        currentPresetData = jobs.presets?.defaultPreset;
+      }
+
+      console.log('open: ', id, jobs, currentPresetData);
+      State.setState('game.creatures.ui.editingPreset', currentPresetData);
+    };
+
+    const changeRuleField = (id, field, value) => {
+      const current = State.queryState('game.creatures.ui.editingPreset');
+      const index = current.jobsRules.findIndex(one => one.id === id);
+
+      if (index < 0) {
+        current.jobsRules.push({
+          id,
+          [field]: value
+        });
+      } else {
+        current.jobsRules[index][field] = value;
+      }
+
+      State.setState(`game.creatures.ui.editingPreset`, current);
+    };
+
+    const closeEditPreset = () => {
+      State.setState(`game.creatures.ui.editingPreset`, null);
+    };
+
+    const savePreset = isNew => {
+      const current = State.queryState('game.creatures.ui.editingPreset');
+      const payload = {
+        isNew,
+        current
+      };
+      console.log('saving', payload);
+      ColibriClient.sendToWorker('save_preset', payload);
+      closeEditPreset();
+    };
+
+    const setPresetUsedId = id => {
+      console.log('use preset: ', id);
+      ColibriClient.sendToWorker('use_preset', {
+        id
+      });
+    };
+
+    const toggleAutodistribute = flag => {
+      console.log('toggle_autodistribute: ', flag);
+      ColibriClient.sendToWorker('toggle_autodistribute', {
+        flag
+      });
+    };
+
+    const reDistribute = () => {
+      ColibriClient.sendToWorker('re_distribute', {});
+    };
+
+    const PresetEditor = ({
+      jobs,
+      editingPresetId,
+      editingPreset
+    }) => {
+      return VirtualDOM.createVirtualElement("div", {
+        className: 'preset-box'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'topActions flex'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(isNew => savePreset(isNew), [!editingPreset.id])
+      }, "Save changes"), VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(() => closeEditPreset())
+      }, "Close Preset")), VirtualDOM.createVirtualElement("div", {
+        className: 'flex name'
+      }, VirtualDOM.createVirtualElement("p", null, "Preset name: "), VirtualDOM.createVirtualElement("input", {
+        value: editingPreset.name,
+        onChange: useCiCallback(e => setPresetName(e.target.value))
+      })), VirtualDOM.createVirtualElement("div", {
+        className: 'rules'
+      }, jobs?.jobs?.map(job => {
+        const foundRules = editingPreset.jobsRules?.find(one => one.id === job.id);
+        return VirtualDOM.createVirtualElement("div", {
+          className: 'job-preset-row'
+        }, VirtualDOM.createVirtualElement("p", null, job.name), VirtualDOM.createVirtualElement("div", {
+          className: 'rules'
+        }, VirtualDOM.createVirtualElement("div", {
+          className: 'flex rule'
+        }, VirtualDOM.createVirtualElement("p", {
+          className: 'label'
+        }, "Set percentage"), VirtualDOM.createVirtualElement("input", {
+          type: 'number',
+          value: foundRules?.percentage || 0,
+          onChange: useCiCallback((id, field, e) => changeRuleField(id, field, +e.target.value), [job.id, 'percentage'])
+        })), VirtualDOM.createVirtualElement("div", {
+          className: 'flex rule'
+        }, VirtualDOM.createVirtualElement("p", {
+          className: 'label'
+        }, "Min amount"), VirtualDOM.createVirtualElement("input", {
+          type: 'number',
+          value: foundRules?.minAmount || 0,
+          onChange: useCiCallback((id, field, e) => changeRuleField(id, field, +e.target.value), [job.id, 'minAmount'])
+        }))));
+      })));
+    };
     const CreatureJobs = ({
       jobs,
       freeWorkers,
@@ -1747,9 +1869,11 @@
       }) : null))) : VirtualDOM.createVirtualElement("p", null, "No jobs available")));
     };
     const SummonCreature = ({
-      info
+      info,
+      presets,
+      editedId
     }) => {
-      return VirtualDOM.createVirtualElement("div", {
+      return VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("div", {
         className: 'summon-creature'
       }, VirtualDOM.createVirtualElement("div", {
         className: 'summon-wrap'
@@ -1777,11 +1901,60 @@
         type: 'number',
         onChange: useCiCallback(e => change_amount(e.target.value)),
         value: info?.amount
-      })));
+      }))), VirtualDOM.createVirtualElement("div", {
+        className: 'preset-editor-wrap'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'flex used-preset'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'select'
+      }, VirtualDOM.createVirtualElement("p", null, "Select creatures preset. Once selected, all free creatures will be assigned their jobs automatically "), VirtualDOM.createVirtualElement("div", {
+        className: 'flex preset-controls'
+      }, VirtualDOM.createVirtualElement("select", {
+        onChange: useCiCallback(e => setPresetUsedId(e.target.value))
+      }, VirtualDOM.createVirtualElement("option", {
+        selected: !presets.activePreset
+      }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
+        selected: presets.activePreset === preset.id,
+        value: preset.id
+      }, preset.name))), VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: reDistribute
+      }, "Re-distribute")), VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("input", {
+        type: 'checkbox',
+        checked: presets?.autoDistribute,
+        onChange: useCiCallback(flag => toggleAutodistribute(flag), [!presets?.autoDistribute])
+      }), VirtualDOM.createVirtualElement("span", null, "Auto-distribute creatures according to preset"))), VirtualDOM.createVirtualElement("p", {
+        className: 'note'
+      }, VirtualDOM.createVirtualElement("span", {
+        className: 'title'
+      }, " Warning: "), " This is experimental content. Be aware of possible bugs."))), VirtualDOM.createVirtualElement("div", {
+        className: 'create-edit'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'flex'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'create'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(() => setPresetEdited(''), [])
+      }, "Create preset")), VirtualDOM.createVirtualElement("div", {
+        className: 'edit'
+      }, VirtualDOM.createVirtualElement("select", {
+        onChange: useCiCallback(e => setPresetEditedId(e.target.value))
+      }, VirtualDOM.createVirtualElement("option", {
+        selected: !editedId
+      }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
+        selected: editedId === preset.id,
+        value: preset.id
+      }, preset.name))), VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(editedId => setPresetEdited(editedId), [editedId])
+      }, "Edit preset"))))));
     };
     const Creatures = () => {
       const info = State.queryState('game.creatures.summon', {});
-      const jobs = State.queryState('game.creatures.jobs', []);
+      const jobs = State.queryState('game.creatures.jobs', {});
+      const editingPreset = State.queryState('game.creatures.ui.editingPreset', null);
+      const editingPresetId = State.queryState('game.creatures.ui.editingPresetId', null);
       const selectedCat = State.queryState('game.creatures.category', 'All');
       const byCats = {
         All: []
@@ -1798,8 +1971,14 @@
       const categories = Object.keys(byCats);
       const controlsSettings = State.queryState('game.general.settings.inputControls.creatureJobs', 'both');
       return VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(SummonCreature, {
-        info: info
-      }), VirtualDOM.createVirtualElement(CreatureJobs, {
+        info: info,
+        presets: jobs?.presets,
+        editedId: editingPresetId
+      }), editingPreset ? VirtualDOM.createVirtualElement(PresetEditor, {
+        jobs: jobs,
+        editingPresetId: editingPresetId,
+        editingPreset: editingPreset
+      }) : VirtualDOM.createVirtualElement(CreatureJobs, {
         jobs: byCats[selectedCat],
         categories: categories,
         freeWorkers: jobs?.free,
@@ -2343,7 +2522,7 @@
       }));
     };
 
-    var css_248z$6 = "\r\n.settings-wrap {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.sett-inner {\r\n    max-width: 500px;\r\n}\r\n\r\n#save-text {\r\n    width: 400px;\r\n    margin-bottom: 10px;\r\n    resize: none;\r\n    /*width: 0;\r\n    height: 0;\r\n    padding: 0;\r\n    margin: 0;\r\n    border: 0;*/\r\n}\r\n\r\n.options .row {\r\n    display: flex;\r\n}\r\n\r\n.options .row .set-title {\r\n    width: 300px;\r\n}";
+    var css_248z$6 = "\r\n.settings-wrap {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.sett-inner {\r\n    max-width: 500px;\r\n}\r\n\r\n#save-text, #load-text {\r\n    width: 400px;\r\n    margin-bottom: 10px;\r\n    resize: none;\r\n    height: 100px;\r\n    /*width: 0;\r\n    height: 0;\r\n    padding: 0;\r\n    margin: 0;\r\n    border: 0;*/\r\n}\r\n\r\n.options .row {\r\n    display: flex;\r\n}\r\n\r\n.options .row .set-title {\r\n    width: 300px;\r\n}\r\n\r\n.load-block {\r\n    margin-top: 20px;\r\n}";
     styleInject(css_248z$6);
 
     const switchSetting$1 = (path, value) => {
@@ -2369,6 +2548,12 @@
     ColibriClient.on('set_settings_state', payload => {
       State.setState('game.settings', payload);
     });
+
+    const importFromClipboard = () => {
+      const data = document.getElementById('load-text').value;
+      console.log('importing: ', data);
+      ColibriClient.sendToWorker('import_game', data);
+    };
 
     const uploadFile = e => {
       if (e.target.files && e.target.files[0]) {
@@ -2545,6 +2730,23 @@
       }, "Slider"), VirtualDOM.createVirtualElement("option", {
         value: 'both',
         selected: settings.inputControls?.learning === 'both'
+      }, "Both")))), VirtualDOM.createVirtualElement("div", {
+        className: 'row'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'set-title'
+      }, VirtualDOM.createVirtualElement("p", null, "Show input on auras page as")), VirtualDOM.createVirtualElement("div", {
+        className: 'set-setting'
+      }, VirtualDOM.createVirtualElement("select", {
+        onChange: useCiCallback((path, e) => switchSetting$1(path, e.target.value), ['inputControls.auras'])
+      }, VirtualDOM.createVirtualElement("option", {
+        value: 'buttons',
+        selected: settings.inputControls?.auras === 'buttons'
+      }, "Input"), VirtualDOM.createVirtualElement("option", {
+        value: 'slider',
+        selected: settings.inputControls?.auras === 'slider'
+      }, "Slider"), VirtualDOM.createVirtualElement("option", {
+        value: 'both',
+        selected: settings.inputControls?.auras === 'both' || !settings.inputControls?.auras
       }, "Both"))))), VirtualDOM.createVirtualElement("div", {
         className: 'section'
       }, VirtualDOM.createVirtualElement("h5", null, "Hotkeys"), VirtualDOM.createVirtualElement("div", {
@@ -2684,12 +2886,20 @@
       className: 'main-action',
       onClick: saveToFile
     }, "Download as file")))), VirtualDOM.createVirtualElement("div", {
+      className: 'flex-block load-block'
+    }, VirtualDOM.createVirtualElement("p", null, "Import game"), VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("textarea", {
+      id: 'load-text',
+      placeholder: 'Paste your text here'
+    }), VirtualDOM.createVirtualElement("div", {
       className: 'flex-block'
-    }, VirtualDOM.createVirtualElement("p", null, "Import game"), VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("input", {
+    }, VirtualDOM.createVirtualElement("button", {
+      className: 'main-action',
+      onClick: importFromClipboard
+    }, "Import"), VirtualDOM.createVirtualElement("input", {
       type: 'file',
       className: 'upload-file',
       onChange: uploadFile
-    }))));
+    })))));
     const Settings = () => {
       const settings = State.queryState('game.settings', {});
       const keySelect = State.queryState('game.ui.selectKey', false);
@@ -2762,7 +2972,7 @@
       }));
     };
 
-    var css_248z$4 = ".queue-wrap {\r\n    padding: 10px;\r\n    background: #030304;\r\n    margin-bottom: 10px;\r\n    overflow-y: auto;\r\n    height: 170px;\r\n}\r\n\r\n.queue-flex {\r\n    display: flex;\r\n    justify-content: flex-start;\r\n    flex-wrap: wrap;\r\n\r\n}\r\n\r\n.queue-flex .summary {\r\n    padding: 10px;\r\n    height: 120px;\r\n}\r\n\r\n.build-item {\r\n    padding: 10px;\r\n    width: 120px;\r\n    height: 120px;\r\n}\r\n\r\n.buildings {\r\n    padding: 10px;\r\n    background: #030304;\r\n}\r\n\r\n.building-wrapper {\r\n    padding: 10px;\r\n}\r\n\r\n.build-wrap {\r\n    width: 150px;\r\n}\r\n\r\n.building-wrapper .description {\r\n    width: 400px;\r\n}\r\n\r\n.embed-block {\r\n    margin-top: 10px;\r\n}\r\n\r\n.embed-block .embed-cost {\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.embed-block .embed-cost .tit {\r\n    margin-right: 5px;\r\n}";
+    var css_248z$4 = ".queue-wrap {\r\n    padding: 10px;\r\n    background: #030304;\r\n    margin-bottom: 10px;\r\n    overflow-y: auto;\r\n    height: 170px;\r\n}\r\n\r\n.queue-flex {\r\n    display: flex;\r\n    justify-content: flex-start;\r\n    flex-wrap: wrap;\r\n\r\n}\r\n\r\n.queue-flex .summary {\r\n    padding: 10px;\r\n    height: 120px;\r\n}\r\n\r\n.build-item {\r\n    padding: 10px;\r\n    width: 120px;\r\n    height: 120px;\r\n}\r\n\r\n.buildings {\r\n    padding: 10px;\r\n    background: #030304;\r\n}\r\n\r\n.building-wrapper {\r\n    padding: 10px;\r\n}\r\n\r\n.build-wrap {\r\n    width: 150px;\r\n}\r\n\r\n.building-wrapper .description {\r\n    width: 400px;\r\n}\r\n\r\n.embed-block {\r\n    margin-top: 10px;\r\n}\r\n\r\n.embed-block .embed-cost {\r\n    display: flex;\r\n    align-items: center;\r\n}\r\n\r\n.embed-block .embed-cost .tit {\r\n    margin-right: 5px;\r\n}\r\n\r\n.building-settings .categories {\r\n    flex-shrink: 0;\r\n}\r\n\r\n.building-settings .note {\r\n    padding: 10px;\r\n}\r\n\r\n.building-settings .note .title {\r\n    color: #f1d119;\r\n    font-weight: bold;\r\n}\r\n\r\n/*\r\n.building-settings .note .text {\r\n    font-style: italic;\r\n}*/\r\n";
     styleInject(css_248z$4);
 
     const doBuild = id => {
@@ -2805,7 +3015,13 @@
       className: 'buildings'
     }, VirtualDOM.createVirtualElement("div", {
       className: 'building-settings flex'
-    }, VirtualDOM.createVirtualElement("div", null), VirtualDOM.createVirtualElement("div", {
+    }, VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("p", {
+      className: 'note'
+    }, VirtualDOM.createVirtualElement("span", {
+      className: 'title'
+    }, " Warning: "), VirtualDOM.createVirtualElement("span", {
+      className: 'text'
+    }, " All your buildings excepting megastructures will reset after banners prestige, unless you embed memory stones into them"))), VirtualDOM.createVirtualElement("div", {
       className: 'categories'
     }, categories.map(one => {
       return VirtualDOM.createVirtualElement("p", {
@@ -2840,7 +3056,7 @@
       className: 'tit'
     }, "Embed memory: "), VirtualDOM.createVirtualElement(ResourceIcon, {
       id: 'memoryStones'
-    }), one.embedMemoryStoneCost) : null, VirtualDOM.createVirtualElement("button", {
+    }), fmtVal(one.embedMemoryStoneCost)) : null, VirtualDOM.createVirtualElement("button", {
       className: 'main-action',
       onClick: useCiCallback(id => doEmbedMemory(id), [one.id]),
       disabled: !one.embedMemoryStoneAvailable
@@ -2894,13 +3110,29 @@
       }));
     };
 
-    var css_248z$3 = ".heirlooms-page {\r\n    padding: 0 10px 10px;\r\n}\r\n\r\n.description-container {\r\n    padding: 20px;\r\n}\r\n\r\n.flex-heirlooms {\r\n    display: flex;\r\n    justify-content: space-between;\r\n}\r\n\r\n.flex-heirlooms .items-container {\r\n    flex: 1;\r\n    margin-right: 20px;\r\n    background: #030304;\r\n    padding: 10px;\r\n}\r\n\r\n.heirlooms-inventory {\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin-top: 20px;\r\n}\r\n\r\n.heirlooms-page .description-container {\r\n    background: #030304;\r\n    max-width: 330px;\r\n}\r\n\r\n.heirlooms-row {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.heirloom-slot {\r\n    padding: 5px;\r\n    width: 280px;\r\n    height: 220px;\r\n    border: 2px solid #333;\r\n    background: #030914;\r\n    margin: 5px;\r\n}\r\n\r\n.heirloom-slot.collapsed {\r\n    height: 50px;\r\n}\r\n.heirloom-slot.collapsed .cross:hover {\r\n    color: #613169;\r\n}\r\n\r\n\r\n.heirloom-slot.collapsed .cross {\r\n    color: #aaaaaa;\r\n    position: absolute;\r\n    right: 5px;\r\n    top: 5px;\r\n    cursor: pointer;\r\n}\r\n\r\n.heirloom-slot.selected {\r\n    border: 2px solid #613169;\r\n}\r\n\r\n\r\n.heirloom-item {\r\n    width: 100%;\r\n    height: 100%;\r\n    padding: 0px;\r\n    position: relative;\r\n}\r\n\r\n.collapsed .heirloom-item .title {\r\n    padding-right: 20px;\r\n}\r\n\r\n.heirloom-item .title {\r\n    font-weight: bold;\r\n    margin: 0;\r\n}\r\n\r\n.heirloom-item .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.heirloom-item .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.heirloom-item .title.tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.heirloom-item .title.tier-4 {\r\n    color: #41e119;\r\n}\r\n\r\n.heirloom-item .title.tier-5 {\r\n    color: #f12149;\r\n}\r\n\r\n.heirloom-item button {\r\n    bottom: 5px;\r\n    width: 180px;\r\n    position: absolute;\r\n}\r\n";
+    var css_248z$3 = ".heirlooms-page {\r\n    padding: 0 10px 10px;\r\n}\r\n\r\n.description-container {\r\n    padding: 20px;\r\n}\r\n\r\n.flex-heirlooms {\r\n    display: flex;\r\n    justify-content: space-between;\r\n}\r\n\r\n.flex-heirlooms .items-container {\r\n    flex: 1;\r\n    margin-right: 20px;\r\n    background: #030304;\r\n    padding: 10px;\r\n}\r\n\r\n.heirlooms-inventory {\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin-top: 20px;\r\n}\r\n\r\n.heirlooms-page .description-container {\r\n    background: #030304;\r\n    max-width: 370px;\r\n}\r\n\r\n.heirlooms-row {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.heirloom-slot {\r\n    padding: 5px;\r\n    width: 280px;\r\n    height: 220px;\r\n    border: 2px solid #333;\r\n    background: #030914;\r\n    margin: 5px;\r\n}\r\n\r\n.heirloom-slot.detailed {\r\n    width: 320px;\r\n    height: 300px;\r\n    position: relative;\r\n}\r\n\r\n.heirloom-item .heirloom-foot {\r\n    position: absolute;\r\n    bottom: 0px;\r\n}\r\n\r\n.heirloom-slot.collapsed {\r\n    height: 50px;\r\n}\r\n.heirloom-slot.collapsed .cross:hover {\r\n    color: #613169;\r\n}\r\n\r\n\r\n.heirloom-slot.collapsed .cross {\r\n    color: #aaaaaa;\r\n    position: absolute;\r\n    right: 5px;\r\n    top: 5px;\r\n    cursor: pointer;\r\n}\r\n\r\n.heirloom-slot.selected {\r\n    border: 2px solid #613169;\r\n}\r\n\r\n\r\n.heirloom-item {\r\n    width: 100%;\r\n    height: 100%;\r\n    padding: 0px;\r\n    position: relative;\r\n}\r\n\r\n.collapsed .heirloom-item .title {\r\n    padding-right: 20px;\r\n}\r\n\r\n.heirloom-item .title {\r\n    font-weight: bold;\r\n    margin: 0;\r\n}\r\n\r\n.heirloom-item .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.heirloom-item .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.heirloom-item .title.tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.heirloom-item .title.tier-4 {\r\n    color: #41e119;\r\n}\r\n\r\n.heirloom-item .title.tier-5 {\r\n    color: #f12149;\r\n}\r\n\r\n.heirloom-item button {\r\n    bottom: 5px;\r\n    width: 180px;\r\n    position: absolute;\r\n}\r\n\r\n.heirloom-item .charge button {\r\n    position: relative;\r\n}\r\n\r\n.locked-icon img{\r\n    width: 16px;\r\n    height: 16px;\r\n}\r\n\r\n.stat-line {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.stat-line .roll-line {\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: flex-start;\r\n    margin-left: 10px;\r\n    flex-shrink: 0;\r\n    flex-grow: 0;\r\n}\r\n\r\n.stat-text {\r\n    flex-shrink: 1;\r\n    flex-grow: 1;\r\n}\r\n\r\n.stat-line .roll-line .cost.missing {\r\n    color: #ad2121;\r\n}\r\n\r\n\r\n.stat-line .roll-line .cost,\r\n.charge .cost {\r\n    display: flex;\r\n}\r\n";
     styleInject(css_248z$3);
 
     const drop = (key, index) => {
       ColibriClient.sendToWorker('drop_heirloom', {
         fromKey: key,
         fromIndex: index
+      });
+    };
+
+    const sendReRoll = (fromKey, fromIndex, bonusIndex) => {
+      ColibriClient.sendToWorker('re_roll', {
+        fromKey,
+        fromIndex,
+        bonusIndex
+      });
+    };
+
+    const chargeHeirloom = (fromKey, fromIndex, amount) => {
+      ColibriClient.sendToWorker('charge_heirloom', {
+        fromKey,
+        fromIndex,
+        amount
       });
     };
 
@@ -2967,7 +3199,9 @@
     }, "X")) : null)) : VirtualDOM.createVirtualElement("p", null, "No actions available"));
     const HeirloomDetails = ({
       expanded,
-      selectedItem
+      selectedItem,
+      fromKey,
+      fromIndex
     }) => VirtualDOM.createVirtualElement("div", {
       className: 'description-container'
     }, VirtualDOM.createVirtualElement("p", {
@@ -2976,14 +3210,53 @@
       className: 'popup-link',
       onClick: useCiCallback(expanded => setExpanded(!expanded), [expanded])
     }, expanded ? 'Collapse items' : 'Expand items'), VirtualDOM.createVirtualElement("div", {
-      className: 'heirloom-slot'
+      className: 'heirloom-slot detailed'
     }, selectedItem ? VirtualDOM.createVirtualElement("div", {
       className: 'heirloom-item'
     }, VirtualDOM.createVirtualElement("p", {
       className: `title tier-${selectedItem.tier}`
     }, selectedItem.name), VirtualDOM.createVirtualElement("div", {
       className: 'bonuses'
-    }, selectedItem.bonuses.map(one => VirtualDOM.createVirtualElement("p", null, one.text)))) : VirtualDOM.createVirtualElement("p", null, "Select item")));
+    }, selectedItem.bonuses.map((one, bonusIndex) => VirtualDOM.createVirtualElement("p", {
+      className: 'stat-line'
+    }, VirtualDOM.createVirtualElement("span", {
+      className: 'stat-text'
+    }, " ", one.text, " "), one.isRollBlocked ? VirtualDOM.createVirtualElement(Icon, {
+      id: 'locked',
+      scope: 'ui',
+      className: 'locked-icon'
+    }) : null, one.isRollAvailable ? VirtualDOM.createVirtualElement("span", {
+      className: 'roll-line'
+    }, " ", VirtualDOM.createVirtualElement("span", {
+      className: 'do-roll popup-link',
+      onClick: useCiCallback((key, index, bonusId) => sendReRoll(key, index, bonusId), [fromKey, fromIndex, bonusIndex])
+    }, "Roll"), " ", VirtualDOM.createVirtualElement("span", {
+      className: `cost ${one.isEnoughStones ? 'enough' : 'missing'}`
+    }, VirtualDOM.createVirtualElement(ResourceIcon, {
+      id: 'memoryStones'
+    }), " ", fmtVal(one.rollPrice), " ")) : null))), VirtualDOM.createVirtualElement("div", {
+      className: 'heirloom-foot'
+    }, selectedItem.isChargeUnlocked ? VirtualDOM.createVirtualElement("div", {
+      className: 'charge-block'
+    }, VirtualDOM.createVirtualElement("div", {
+      className: 'charge flex'
+    }, VirtualDOM.createVirtualElement("button", {
+      className: 'main-action',
+      onClick: useCiCallback((fromKey, fromIndex, times) => chargeHeirloom(fromKey, fromIndex, times), [fromKey, fromIndex, 1])
+    }, "Charge (x1)"), VirtualDOM.createVirtualElement("span", {
+      className: `cost ${selectedItem.isChargeAvailable ? 'enough' : 'missing'}`
+    }, VirtualDOM.createVirtualElement(ResourceIcon, {
+      id: 'chargeStones'
+    }), " ", fmtVal(selectedItem.chargePrice), " ")), VirtualDOM.createVirtualElement("div", {
+      className: 'charge charge-max flex'
+    }, VirtualDOM.createVirtualElement("button", {
+      className: 'main-action',
+      onClick: useCiCallback((fromKey, fromIndex, times) => chargeHeirloom(fromKey, fromIndex, times), [fromKey, fromIndex, selectedItem.maxAmountChargeable])
+    }, `Charge max (x${selectedItem.maxAmountChargeable})`), VirtualDOM.createVirtualElement("span", {
+      className: `cost ${selectedItem.isChargeAvailable ? 'enough' : 'missing'}`
+    }, VirtualDOM.createVirtualElement(ResourceIcon, {
+      id: 'chargeStones'
+    }), " ", fmtVal(selectedItem.priceForMax), " "))) : null)) : VirtualDOM.createVirtualElement("p", null, "Select item")));
     const HeirloomsFilters = ({
       lootFilterTier
     }) => VirtualDOM.createVirtualElement("div", {
@@ -3002,7 +3275,10 @@
     }, "Rare"), VirtualDOM.createVirtualElement("option", {
       value: 3,
       selected: lootFilterTier === 3
-    }, "Epic"))));
+    }, "Epic"), VirtualDOM.createVirtualElement("option", {
+      value: 4,
+      selected: lootFilterTier === 4
+    }, "Legendary"))));
     const Heirlooms = () => {
       const selection = State.queryState('game.heirlooms.selected');
       const data = State.queryState('game.heirlooms.data', {});
@@ -3031,7 +3307,9 @@
         expanded: expanded
       })), VirtualDOM.createVirtualElement(HeirloomDetails, {
         expanded: expanded,
-        selectedItem: selectedItem
+        selectedItem: selectedItem,
+        fromKey: selection?.key,
+        fromIndex: selection?.index
       })), VirtualDOM.createVirtualElement("div", {
         className: 'heirlooms-inventory'
       }, VirtualDOM.createVirtualElement("h4", null, "Inventory"), VirtualDOM.createVirtualElement("div", {
@@ -3046,7 +3324,7 @@
       })));
     };
 
-    var css_248z$2 = ".aura-container .aura-settings {\r\n    background: #030304;\r\n    padding: 20px;\r\n    margin-bottom: 10px;\r\n}\r\n\r\n.aura-rows {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.aura-container .aura-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n.aura-container .aura-row > div {\r\n    width: 200px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar .outer-span {\r\n    width: 300px;\r\n}\r\n.aura-container .aura-row .xp-bar .tiny {\r\n    font-size: 12px;\r\n    text-align: right;\r\n    margin: 0;\r\n}\r\n\r\n\r\n.aura-container .aura-row .actions {\r\n    display: block;\r\n}\r\n\r\n.aura-container .aura-row .actions .effort {\r\n    margin: 0 5px;\r\n}\r\n\r\n.learning-slider {\r\n    width: 190px;\r\n}\r\n\r\n.aura-blocks {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n}\r\n\r\n.aura-block {\r\n    width: 280px;\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin: 5px;\r\n    height: 250px;\r\n}\r\n\r\n.aura-block-inner {\r\n    height: 190px;\r\n}\r\n\r\n.aura-block .actions {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    bottom: 10px;\r\n}\r\n\r\n.aura-title .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.aura-title .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.aura-title .tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.aura-title .tier-4 {\r\n    color: #71f119;\r\n}\r\n\r\n.quality {\r\n    font-style: italic;\r\n    margin: 15px 0;\r\n}";
+    var css_248z$2 = ".aura-container .aura-settings {\r\n    background: #030304;\r\n    padding: 20px;\r\n    margin-bottom: 10px;\r\n}\r\n\r\n.aura-rows {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.aura-container .aura-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n.aura-container .aura-row > div {\r\n    width: 200px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar .outer-span {\r\n    width: 300px;\r\n}\r\n.aura-container .aura-row .xp-bar .tiny {\r\n    font-size: 12px;\r\n    text-align: right;\r\n    margin: 0;\r\n}\r\n\r\n\r\n.aura-container .aura-row .actions {\r\n    display: block;\r\n}\r\n\r\n.aura-container .aura-row .actions .effort {\r\n    margin: 0 5px;\r\n}\r\n\r\n.learning-slider {\r\n    width: 190px;\r\n}\r\n\r\n.aura-input {\r\n    width: 200px;\r\n    margin-top: 5px;\r\n}\r\n\r\n.aura-blocks {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n}\r\n\r\n.aura-block {\r\n    width: 280px;\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin: 5px;\r\n    height: 250px;\r\n}\r\n\r\n.aura-block-inner {\r\n    height: 190px;\r\n}\r\n\r\n.aura-block .actions {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    bottom: 10px;\r\n}\r\n\r\n.aura-title .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.aura-title .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.aura-title .tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.aura-title .tier-4 {\r\n    color: #71f119;\r\n}\r\n\r\n.quality {\r\n    font-style: italic;\r\n    margin: 15px 0;\r\n}";
     styleInject(css_248z$2);
 
     const dropAura = index => {
@@ -3105,10 +3383,19 @@
     ColibriClient.on('set_auras_state', payload => {
       State.setState('game.auras.data', payload);
     });
+
+    const chargeAura = (index, amount) => {
+      ColibriClient.sendToWorker('charge_aura', {
+        index,
+        amount
+      });
+    };
+
     const ActiveAuras = ({
       auras,
       filter,
-      filterQuality
+      filterQuality,
+      controlsSettings
     }) => {
       return VirtualDOM.createVirtualElement("div", {
         className: 'aura-container'
@@ -3134,14 +3421,34 @@
         value: filterQuality * 100 || 0
       }))), VirtualDOM.createVirtualElement("div", {
         className: 'aura-rows'
-      }, auras ? auras.map(one => VirtualDOM.createVirtualElement("div", {
+      }, auras ? auras.map(one => VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement("div", {
         className: `aura-row`,
         id: `aura-row-${one.index}`
       }, VirtualDOM.createVirtualElement("div", {
         className: `aura-title`
       }, VirtualDOM.createVirtualElement("p", {
         className: `tier-${one.tier}`
-      }, one.name, " [", one.level, "]")), VirtualDOM.createVirtualElement("div", {
+      }, one.name, " [", one.level, "]"), VirtualDOM.createVirtualElement("div", null, one.isChargeUnlocked ? VirtualDOM.createVirtualElement("div", {
+        className: 'charge-block'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'charge flex'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback((index, times) => chargeAura(index, times), [one.index, 1])
+      }, "Charge (x1)"), VirtualDOM.createVirtualElement("span", {
+        className: `cost ${one.isChargeAvailable ? 'enough' : 'missing'}`
+      }, VirtualDOM.createVirtualElement(ResourceIcon, {
+        id: 'chargeGems'
+      }), " ", fmtVal(one.chargePrice), " ")), VirtualDOM.createVirtualElement("div", {
+        className: 'charge charge-max flex'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback((index, times) => chargeAura(index, times), [one.index, one.maxAmountChargeable])
+      }, `Charge max (x${one.maxAmountChargeable})`), VirtualDOM.createVirtualElement("span", {
+        className: `cost ${one.isChargeAvailable ? 'enough' : 'missing'}`
+      }, VirtualDOM.createVirtualElement(ResourceIcon, {
+        id: 'chargeGems'
+      }), " ", fmtVal(one.priceForMax), " "))) : null)), VirtualDOM.createVirtualElement("div", {
         className: 'description'
       }, VirtualDOM.createVirtualElement("p", {
         className: 'quality'
@@ -3162,7 +3469,17 @@
       }, fmtVal(100 * one.effort), "%"), VirtualDOM.createVirtualElement("button", {
         className: 'main-action',
         onClick: useCiCallback(index => turnOffAura(index), [one.index])
-      }, "Turn off")), VirtualDOM.createVirtualElement("input", {
+      }, "Turn off")), ['buttons', 'both'].includes(controlsSettings) ? VirtualDOM.createVirtualElement("input", {
+        type: 'number',
+        className: 'aura-input',
+        name: `efforts-${one.index}`,
+        min: "0",
+        max: `${Math.min(100)}`,
+        value: `${Math.round(one.effort * 10000) / 100}`,
+        onChange: useCiCallback((id, e) => {
+          changeEfforts(id, e.target.value);
+        }, [one.index])
+      }) : null, ['slider', 'both'].includes(controlsSettings) ? VirtualDOM.createVirtualElement("input", {
         type: 'range',
         className: 'learning-slider',
         name: `workers-${one.index}`,
@@ -3172,7 +3489,7 @@
         onChange: useCiCallback((id, e) => {
           changeEfforts(id, e.target.value);
         }, [one.index])
-      })))) : VirtualDOM.createVirtualElement("p", null, "No active auras")));
+      }) : null)))) : VirtualDOM.createVirtualElement("p", null, "No active auras")));
     };
     const AllAuras = ({
       auras
@@ -3210,12 +3527,14 @@
       const filterQuality = State.queryState('game.auras.data.filterMinQuality', 0);
       const rs = State.queryState('game.resources', []);
       rs.find(one => one.id === 'mana')?.income;
+      const controlsSettings = State.queryState('game.general.settings.inputControls.auras', 'both');
       const activeAuras = auras.filter(one => one.isTurnedOn);
       const allAuras = auras.filter(one => !one.isTurnedOn);
       return VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(ActiveAuras, {
         auras: activeAuras,
         filter: filter,
-        filterQuality: filterQuality
+        filterQuality: filterQuality,
+        controlsSettings: controlsSettings
       }), VirtualDOM.createVirtualElement(AllAuras, {
         auras: allAuras
       }));
@@ -3237,7 +3556,7 @@
 
     const Content = () => VirtualDOM.createVirtualElement(RunScreen, null);
 
-    var css_248z$1 = "h1 {\r\n    padding-left: 20px;\r\n}\r\n\r\nbody * {\r\n    box-sizing: border-box;\r\n}\r\n\r\nbody {\r\n    margin: 0;\r\n    padding: 0;\r\n    background: #121520;\r\n    color: #fff;\r\n    /*font-family: \"Century Gothic\";*/\r\n    font-family: 'Didact Gothic', sans-serif;\r\n    font-size: 13px;\r\n}\r\n\r\np {\r\n    margin-block-start: 0.75em;\r\n    margin-block-end: 0.75em;\r\n}\r\n\r\n.flex {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n\r\nbutton {\r\n    color: #ffffff;\r\n    cursor: pointer;\r\n}\r\n\r\nbutton.main-action.long {\r\n    width: 240px;\r\n}\r\n\r\nbutton.main-action {\r\n    background: linear-gradient(#512159, #613169, #512159);\r\n    padding: 5px 10px;\r\n    border: 1px solid #411149;\r\n    border-radius: 3px;\r\n}\r\n\r\nbutton.main-action:hover {\r\n    background: linear-gradient(#411149, #512159, #411149);\r\n}\r\n\r\nbutton.main-action:disabled {\r\n    background: #130314;\r\n    color: #989\r\n}\r\n\r\n.hint {\r\n    position: fixed;\r\n    bottom: 40px;\r\n    left: 10px;\r\n    background: #000;\r\n    color: #fff;\r\n    padding: 20px;\r\n    font-size: 13px;\r\n    border-radius: 5px;\r\n}\r\n\r\n.modal-wrap {\r\n    position: fixed;\r\n    top: 0;\r\n    left: 0;\r\n    width: 100%;\r\n    height: 100%;\r\n    background: rgba(30,30,30,0.6);\r\n}\r\n\r\n.modal-wrap .modal {\r\n    margin: 10% auto auto;\r\n    width: 50%;\r\n    height: 60%;\r\n    position: relative;\r\n    background: #070814;\r\n    padding: 20px;\r\n}\r\n\r\n.modal-wrap .modal.confirm-modal {\r\n    max-height: 500px;\r\n    min-height: 200px;\r\n}\r\n\r\n.modal-wrap .modal .modal-body {\r\n    overflow-y: scroll;\r\n    height: calc(100% - 90px);\r\n}\r\n\r\n.modal-wrap .modal.confirm-modal .modal-body {\r\n    overflow-y: auto;\r\n}\r\n\r\n.modal-wrap .modal .note {\r\n    font-style: italic;\r\n    color: #aaa;\r\n}\r\n\r\n.modal-wrap .modal .close {\r\n    cursor: pointer;\r\n}\r\n\r\n.resource-item {\r\n    display: flex;\r\n}\r\n\r\n.resource-item .missing {\r\n    color: #ad2121;\r\n}\r\n\r\n.resource-icon-wrap {\r\n    width: 16px;\r\n    height: 16px;\r\n    display: inline-block;\r\n    margin-right: 0.25em;\r\n}\r\n\r\n.icon-wrap img{\r\n    object-fit: contain;\r\n    width: 100%;\r\n}\r\n\r\n.resource-icon-wrap img {\r\n    width: 100%;\r\n    object-fit: contain;\r\n}\r\n\r\n.progress-wrap {\r\n    padding: 0.75em;\r\n}\r\n\r\n.progress-wrap .outer-span {\r\n    background: #121520;\r\n    height: 8px;\r\n    border-radius: 4px;\r\n    border: 1px solid #444;\r\n}\r\n\r\n.progress-wrap .outer-span .inner-span{\r\n    height: 100%;\r\n    border-radius: 4px;\r\n    background: linear-gradient(#713169, #915189, #713169);\r\n}\r\n\r\n.progress-wrap .outer-span.blue .inner-span{\r\n    height: 100%;\r\n    border-radius: 4px;\r\n    background: linear-gradient(#7191b9, #7191d9, #7191b9);\r\n}\r\n\r\n.popup-link {\r\n    color: #f171a9;\r\n    text-decoration: underline;\r\n    cursor: pointer;\r\n    margin-right: 10px;\r\n    margin-left: 10px;\r\n}\r\n\r\n.link {\r\n    color: #f171a9;\r\n    text-decoration: underline;\r\n    cursor: pointer;\r\n}\r\n\r\n.padded {\r\n    margin: 16px 0;\r\n}\r\n\r\n.notifications-wrapper {\r\n    top: 0;\r\n    right: 0;\r\n    position: fixed;\r\n    z-index: 4;\r\n}\r\n\r\n.notifications-wrapper .notification {\r\n    border-radius: 5px;\r\n    padding: 3px 5px;\r\n    margin: 3px;\r\n}\r\n\r\n.confirmation-popup-body .description{\r\n    height: calc(100% - 60px);\r\n}";
+    var css_248z$1 = "h1 {\r\n    padding-left: 20px;\r\n}\r\n\r\nbody * {\r\n    box-sizing: border-box;\r\n}\r\n\r\nbody {\r\n    margin: 0;\r\n    padding: 0;\r\n    background: #121520;\r\n    color: #fff;\r\n    /*font-family: \"Century Gothic\";*/\r\n    font-family: 'Didact Gothic', sans-serif;\r\n    font-size: 13px;\r\n}\r\n\r\np {\r\n    margin-block-start: 0.75em;\r\n    margin-block-end: 0.75em;\r\n}\r\n\r\n.flex {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n\r\nbutton {\r\n    color: #ffffff;\r\n    cursor: pointer;\r\n}\r\n\r\nbutton.main-action.long {\r\n    width: 240px;\r\n}\r\n\r\nbutton.main-action {\r\n    background: linear-gradient(#512159, #613169, #512159);\r\n    padding: 5px 10px;\r\n    border: 1px solid #411149;\r\n    border-radius: 3px;\r\n}\r\n\r\nbutton.main-action:hover {\r\n    background: linear-gradient(#411149, #512159, #411149);\r\n}\r\n\r\nbutton.main-action:disabled {\r\n    background: #130314;\r\n    color: #989\r\n}\r\n\r\n.hint {\r\n    position: fixed;\r\n    bottom: 40px;\r\n    left: 10px;\r\n    background: #000;\r\n    color: #fff;\r\n    padding: 20px;\r\n    font-size: 13px;\r\n    border-radius: 5px;\r\n}\r\n\r\n.modal-wrap {\r\n    position: fixed;\r\n    top: 0;\r\n    left: 0;\r\n    width: 100%;\r\n    height: 100%;\r\n    background: rgba(30,30,30,0.6);\r\n    z-index: 2;\r\n}\r\n\r\n.modal-wrap .modal {\r\n    margin: 10% auto auto;\r\n    width: 50%;\r\n    height: 60%;\r\n    position: relative;\r\n    background: #070814;\r\n    padding: 20px;\r\n}\r\n\r\n.modal-wrap .modal.confirm-modal {\r\n    max-height: 500px;\r\n    min-height: 200px;\r\n}\r\n\r\n.modal-wrap .modal .modal-body {\r\n    overflow-y: scroll;\r\n    height: calc(100% - 90px);\r\n}\r\n\r\n.modal-wrap .modal.confirm-modal .modal-body {\r\n    overflow-y: auto;\r\n}\r\n\r\n.modal-wrap .modal .note {\r\n    font-style: italic;\r\n    color: #aaa;\r\n}\r\n\r\n.modal-wrap .modal .close {\r\n    cursor: pointer;\r\n}\r\n\r\n.resource-item {\r\n    display: flex;\r\n}\r\n\r\n.resource-item .missing {\r\n    color: #ad2121;\r\n}\r\n\r\n.resource-icon-wrap {\r\n    width: 16px;\r\n    height: 16px;\r\n    display: inline-block;\r\n    margin-right: 0.25em;\r\n}\r\n\r\n.icon-wrap img{\r\n    object-fit: contain;\r\n    width: 100%;\r\n}\r\n\r\n.resource-icon-wrap img {\r\n    width: 100%;\r\n    object-fit: contain;\r\n}\r\n\r\n.progress-wrap {\r\n    padding: 0.75em;\r\n}\r\n\r\n.progress-wrap .outer-span {\r\n    background: #121520;\r\n    height: 8px;\r\n    border-radius: 4px;\r\n    border: 1px solid #444;\r\n}\r\n\r\n.progress-wrap .outer-span .inner-span{\r\n    height: 100%;\r\n    border-radius: 4px;\r\n    background: linear-gradient(#713169, #915189, #713169);\r\n}\r\n\r\n.progress-wrap .outer-span.blue .inner-span{\r\n    height: 100%;\r\n    border-radius: 4px;\r\n    background: linear-gradient(#7191b9, #7191d9, #7191b9);\r\n}\r\n\r\n.popup-link {\r\n    color: #f171a9;\r\n    text-decoration: underline;\r\n    cursor: pointer;\r\n    margin-right: 10px;\r\n    margin-left: 10px;\r\n}\r\n\r\n.link {\r\n    color: #f171a9;\r\n    text-decoration: underline;\r\n    cursor: pointer;\r\n}\r\n\r\n.padded {\r\n    margin: 16px 0;\r\n}\r\n\r\n.notifications-wrapper {\r\n    top: 0;\r\n    right: 0;\r\n    position: fixed;\r\n    z-index: 4;\r\n}\r\n\r\n.notifications-wrapper .notification {\r\n    border-radius: 5px;\r\n    padding: 3px 5px;\r\n    margin: 3px;\r\n}\r\n\r\n.confirmation-popup-body .description{\r\n    height: calc(100% - 60px);\r\n}";
     styleInject(css_248z$1);
 
     const markShown = () => ColibriClient.sendToWorker('do_story_shown');
@@ -3417,7 +3736,7 @@
       title: 'Version history'
     }, VirtualDOM.createVirtualElement("div", {
       className: 'version-items'
-    }, VirtualDOM.createVirtualElement("h4", null, "Version 0.1.8 (04.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Set all to value\" button on learning page"), VirtualDOM.createVirtualElement("li", null, "Bosses will now drop heirlooms (Up to legendary tier)"), VirtualDOM.createVirtualElement("li", null, "Added new heirlooms modifiers"), VirtualDOM.createVirtualElement("li", null, "Added new bosses")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.7 (03.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Optimize\" button next to banners, that should help get max out of your banners"), VirtualDOM.createVirtualElement("li", null, "Added total building queue time"), VirtualDOM.createVirtualElement("li", null, "Added 3 more later game researches and 4 buildings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6a (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when you can go negative on flasks"), VirtualDOM.createVirtualElement("li", null, "Added quality aura filter")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6 (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Banners now have diminishing effect after 10K amount"), VirtualDOM.createVirtualElement("li", null, "Added hint when it worth to convert banner tier (exchange arrows appear on top right of banner item block)"), VirtualDOM.createVirtualElement("li", null, "Added new megastructures"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game buildings and researches"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when endurance and aggression flasks effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Decreased costs of crafting"), VirtualDOM.createVirtualElement("li", null, "UI fixes for buildings queue")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.5 (27.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new flask types"), VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Updated sidebar UI - now resources displayed are configurable."), VirtualDOM.createVirtualElement("li", null, "Added new resource, providing possibility to persist buildings/captured territory through resets")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.4 (26.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Improved fighting mechanics: added new attributes, different enemy types"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game content - auras, providing various bonuses"), VirtualDOM.createVirtualElement("li", null, "Added boss arena mechanics (unlocked after you research building)"), VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs and grammar."), VirtualDOM.createVirtualElement("li", null, "Rebalanced heirloom drop rarity")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3a (14.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3 (12.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed old bug when energetic temper did not gave 10 free trainings"), VirtualDOM.createVirtualElement("li", null, "Moved Story and Settings to separate menu"), VirtualDOM.createVirtualElement("li", null, "Added hotkeys settings."), VirtualDOM.createVirtualElement("li", null, "Changed banners formula. Bonus now is calculated as (1+a*(1+b*(1+...)))"), VirtualDOM.createVirtualElement("li", null, "Change UI controls in learning page (similar to creatures tab)"), VirtualDOM.createVirtualElement("li", null, "Added \"Condensed time\", granted when you offline and allowing you to accelerate things")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2a (06.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed issue with buildings in queue can cause negative amount of gold"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when queue not saved"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some buildings effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when territory awards in some cases was incorrect")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2 (05.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added mega structures, that persist through reset."), VirtualDOM.createVirtualElement("li", null, "Added heirlooms (earned in fights, providing various bonuses, persist through reset)"), VirtualDOM.createVirtualElement("li", null, "Added building queue"), VirtualDOM.createVirtualElement("li", null, "Add couple new buildings, researches and resources"), VirtualDOM.createVirtualElement("li", null, "Add cooldown to banners prestige (45 seconds per run limitation)"), VirtualDOM.createVirtualElement("li", null, "Fixed rounding bugs, slider's  on creatures page, descriptions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.1 (30.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Updated UI for creature jobs selectors"), VirtualDOM.createVirtualElement("li", null, "Added ability to revert banners convesion"), VirtualDOM.createVirtualElement("li", null, "Added 2 new researches"), VirtualDOM.createVirtualElement("li", null, "Added new building"), VirtualDOM.createVirtualElement("li", null, "Fixed bugs when some buildings had no effect"), VirtualDOM.createVirtualElement("li", null, "Added notification settings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.0 (29.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added possibility to select your temper on prestige (providing certain bonuses to next run)"), VirtualDOM.createVirtualElement("li", null, "Banners tab now allows to convert 10% of your previous tier"), VirtualDOM.createVirtualElement("li", null, "Added new early-game shop items providing more automation and bigger bonuses to energe regeneration"), VirtualDOM.createVirtualElement("li", null, "Added more than 10 new researches, including ones that will make starting runs easier"), VirtualDOM.createVirtualElement("li", null, "Added new buildings"), VirtualDOM.createVirtualElement("li", null, "Increased fighting rewards"), VirtualDOM.createVirtualElement("li", null, "Improved UI (sidebar, learning controls, and other small fixes/improvements)"), VirtualDOM.createVirtualElement("li", null, "Added \"Purchase all available\" button in shop")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.4 (26.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added building mechanics (basics)"), VirtualDOM.createVirtualElement("li", null, "Added possibility to show purchased shop items"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when converting banners caused rewrite instead of add amount"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when green banner didn't affected gold from work on stable"), VirtualDOM.createVirtualElement("li", null, "Fixed export game issues (copy to buffer)")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.3 (22.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Balance update: increased max mana gain by courses, decreased tireless research effect"), VirtualDOM.createVirtualElement("li", null, "Added story page with current and passed milestones"), VirtualDOM.createVirtualElement("li", null, "Added resource balance to sidebar"), VirtualDOM.createVirtualElement("li", null, "Effects of all actions and spells are now shown"), VirtualDOM.createVirtualElement("li", null, "Improved shop items descriptions"), VirtualDOM.createVirtualElement("li", null, "Fixed grammar mistakes"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some content was not visible under specific screen resolutions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.2 (21.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added battle mechanics"), VirtualDOM.createVirtualElement("li", null, "Added researcher banner"), VirtualDOM.createVirtualElement("li", null, "UI fixes"))), VirtualDOM.createVirtualElement("div", {
+    }, VirtualDOM.createVirtualElement("h5", null, "Version 0.2.1 (12.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when game was broken after prestige while using reset"), VirtualDOM.createVirtualElement("li", null, "Added setting for auto-distribute creatures (on/off)"), VirtualDOM.createVirtualElement("li", null, "Added text input to import save"), VirtualDOM.createVirtualElement("li", null, "Fixed text descriptions for shop items and researches")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.0 (11.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added creatures jobs preset (beta version)"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when creatures could die when you missing mana or gold"), VirtualDOM.createVirtualElement("li", null, "Rebalanced formula for stones and gems gain"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when heirlooms bonuses were calculated incorrectly after charge"), VirtualDOM.createVirtualElement("li", null, "Fixed some UI bugs and grammar mistakes")), VirtualDOM.createVirtualElement("h5", null, "Version 0.1.9 (10.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "You can now re-roll one of heirloom stats"), VirtualDOM.createVirtualElement("li", null, "Added later game researches and 2 new resources, unlocking new ways to empower your heirlooms and auras"), VirtualDOM.createVirtualElement("li", null, "Added new building, unlocked in later game"), VirtualDOM.createVirtualElement("li", null, "Added legendary tier to heirloom loot filter"), VirtualDOM.createVirtualElement("li", null, "Harbour now also provides storage for ore"), VirtualDOM.createVirtualElement("li", null, "Memory stones now persist through resets"), VirtualDOM.createVirtualElement("li", null, "Add input type setting for auras")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.8 (04.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Set all to value\" button on learning page"), VirtualDOM.createVirtualElement("li", null, "Bosses will now drop heirlooms (Up to legendary tier)"), VirtualDOM.createVirtualElement("li", null, "Added new heirlooms modifiers"), VirtualDOM.createVirtualElement("li", null, "Added new bosses")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.7 (03.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Optimize\" button next to banners, that should help get max out of your banners"), VirtualDOM.createVirtualElement("li", null, "Added total building queue time"), VirtualDOM.createVirtualElement("li", null, "Added 3 more later game researches and 4 buildings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6a (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when you can go negative on flasks"), VirtualDOM.createVirtualElement("li", null, "Added quality aura filter")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6 (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Banners now have diminishing effect after 10K amount"), VirtualDOM.createVirtualElement("li", null, "Added hint when it worth to convert banner tier (exchange arrows appear on top right of banner item block)"), VirtualDOM.createVirtualElement("li", null, "Added new megastructures"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game buildings and researches"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when endurance and aggression flasks effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Decreased costs of crafting"), VirtualDOM.createVirtualElement("li", null, "UI fixes for buildings queue")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.5 (27.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new flask types"), VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Updated sidebar UI - now resources displayed are configurable."), VirtualDOM.createVirtualElement("li", null, "Added new resource, providing possibility to persist buildings/captured territory through resets")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.4 (26.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Improved fighting mechanics: added new attributes, different enemy types"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game content - auras, providing various bonuses"), VirtualDOM.createVirtualElement("li", null, "Added boss arena mechanics (unlocked after you research building)"), VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs and grammar."), VirtualDOM.createVirtualElement("li", null, "Rebalanced heirloom drop rarity")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3a (14.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3 (12.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed old bug when energetic temper did not gave 10 free trainings"), VirtualDOM.createVirtualElement("li", null, "Moved Story and Settings to separate menu"), VirtualDOM.createVirtualElement("li", null, "Added hotkeys settings."), VirtualDOM.createVirtualElement("li", null, "Changed banners formula. Bonus now is calculated as (1+a*(1+b*(1+...)))"), VirtualDOM.createVirtualElement("li", null, "Change UI controls in learning page (similar to creatures tab)"), VirtualDOM.createVirtualElement("li", null, "Added \"Condensed time\", granted when you offline and allowing you to accelerate things")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2a (06.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed issue with buildings in queue can cause negative amount of gold"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when queue not saved"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some buildings effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when territory awards in some cases was incorrect")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2 (05.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added mega structures, that persist through reset."), VirtualDOM.createVirtualElement("li", null, "Added heirlooms (earned in fights, providing various bonuses, persist through reset)"), VirtualDOM.createVirtualElement("li", null, "Added building queue"), VirtualDOM.createVirtualElement("li", null, "Add couple new buildings, researches and resources"), VirtualDOM.createVirtualElement("li", null, "Add cooldown to banners prestige (45 seconds per run limitation)"), VirtualDOM.createVirtualElement("li", null, "Fixed rounding bugs, slider's  on creatures page, descriptions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.1 (30.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Updated UI for creature jobs selectors"), VirtualDOM.createVirtualElement("li", null, "Added ability to revert banners convesion"), VirtualDOM.createVirtualElement("li", null, "Added 2 new researches"), VirtualDOM.createVirtualElement("li", null, "Added new building"), VirtualDOM.createVirtualElement("li", null, "Fixed bugs when some buildings had no effect"), VirtualDOM.createVirtualElement("li", null, "Added notification settings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.0 (29.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added possibility to select your temper on prestige (providing certain bonuses to next run)"), VirtualDOM.createVirtualElement("li", null, "Banners tab now allows to convert 10% of your previous tier"), VirtualDOM.createVirtualElement("li", null, "Added new early-game shop items providing more automation and bigger bonuses to energe regeneration"), VirtualDOM.createVirtualElement("li", null, "Added more than 10 new researches, including ones that will make starting runs easier"), VirtualDOM.createVirtualElement("li", null, "Added new buildings"), VirtualDOM.createVirtualElement("li", null, "Increased fighting rewards"), VirtualDOM.createVirtualElement("li", null, "Improved UI (sidebar, learning controls, and other small fixes/improvements)"), VirtualDOM.createVirtualElement("li", null, "Added \"Purchase all available\" button in shop")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.4 (26.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added building mechanics (basics)"), VirtualDOM.createVirtualElement("li", null, "Added possibility to show purchased shop items"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when converting banners caused rewrite instead of add amount"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when green banner didn't affected gold from work on stable"), VirtualDOM.createVirtualElement("li", null, "Fixed export game issues (copy to buffer)")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.3 (22.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Balance update: increased max mana gain by courses, decreased tireless research effect"), VirtualDOM.createVirtualElement("li", null, "Added story page with current and passed milestones"), VirtualDOM.createVirtualElement("li", null, "Added resource balance to sidebar"), VirtualDOM.createVirtualElement("li", null, "Effects of all actions and spells are now shown"), VirtualDOM.createVirtualElement("li", null, "Improved shop items descriptions"), VirtualDOM.createVirtualElement("li", null, "Fixed grammar mistakes"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some content was not visible under specific screen resolutions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.2 (21.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added battle mechanics"), VirtualDOM.createVirtualElement("li", null, "Added researcher banner"), VirtualDOM.createVirtualElement("li", null, "UI fixes"))), VirtualDOM.createVirtualElement("div", {
       className: 'version-items'
     }, VirtualDOM.createVirtualElement("h4", null, "Version 0.0.1 (12.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Initial build"), VirtualDOM.createVirtualElement("li", null, "Include plenty shop items"), VirtualDOM.createVirtualElement("li", null, "Researches"), VirtualDOM.createVirtualElement("li", null, "Prestige layer (banners)")))), VirtualDOM.createVirtualElement(Modal, {
       modalId: 'about',
@@ -3439,6 +3758,8 @@
       target: '_blank',
       className: 'link'
     }, "Icons8.com"), " for letting use their icons"), VirtualDOM.createVirtualElement("p", {
+      className: 'padded'
+    }, "Thanks to Triple for assistance in fixing grammar mistakes"), VirtualDOM.createVirtualElement("p", {
       className: 'padded'
     }, "Especial thanks to Ukrainian Military forces for defending my country and letting me spend my time developing weird games."))));
 
