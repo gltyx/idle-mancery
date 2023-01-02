@@ -2030,6 +2030,9 @@
         }
 
         static getPlainData(auraData) {
+            if(!auraData.uuid) {
+                auraData.uuid = v4();
+            }
             if(!auraData.charge || Number.isNaN(auraData.charge)) {
                 auraData.charge = 1.0;
             }
@@ -2101,6 +2104,118 @@
 
     }
 
+    class AurasPresets {
+
+        static state = {
+            presets: [],
+            edited: null,
+            activePreset: '',
+        }
+
+        static initialize(isBannerPrestige) {
+            console.log('Preset init called!!!');
+            if(!isBannerPrestige || !AurasPresets.state) {
+                AurasPresets.state = {
+                    presets: [],
+                    edited: null,
+                    activePreset: '',
+                };
+            }
+            return AurasPresets.state;
+        }
+
+        static initializePreset() {
+            return {
+                name: 'New Preset',
+                auras: [],
+                max: BasicAuras.getMax(),
+            }
+        }
+
+        static setUsedPreset(id) {
+            AurasPresets.state.activePreset = id;
+        }
+
+        static validateNormalizeRules(auras) {
+            const aurasList = BasicAuras.state.auras;
+            let validatedAuras = [];
+
+            let totlEffort = 0;
+
+            auras.forEach(({uuid, effort}, index) => {
+                if(!aurasList.find(aura => aura.uuid === uuid)) {
+                    return;
+                }
+                if(validatedAuras.length >= BasicAuras.getMax()) {
+                    return;
+                }
+                validatedAuras.push({ uuid, effort });
+                totlEffort += effort;
+            });
+
+            if(totlEffort > 1) {
+                validatedAuras = validatedAuras.map(one => ({
+                    ...one,
+                    effort: one.effort / totlEffort,
+                }));
+            }
+
+            return validatedAuras;
+        }
+
+        static savePreset(isNew, data) {
+            let id = data.id;
+            if(isNew) {
+                id = v4();
+            }
+            if(!id) {
+                console.error('id is required in existing preset');
+                return;
+            }
+            const existingWithName = AurasPresets.state.presets.find(one => one.id !== id && one.name === data.name);
+            if(existingWithName) {
+                console.error('Preset with such name already exists');
+                return;
+            }
+            let objToSave = {
+                id,
+                name: data.name,
+                auras: AurasPresets.validateNormalizeRules(data.auras)
+            };
+            let foundIndex = AurasPresets.state.presets.findIndex(one => one.id === id);
+            if(foundIndex < 0) {
+                AurasPresets.state.presets.push(objToSave);
+            } else {
+                AurasPresets.state.presets[foundIndex] = objToSave;
+            }
+            console.log('newPresets: ', AurasPresets.state.presets);
+        }
+
+        static assignAccordingToPreset(aurasList) {
+            if(!AurasPresets.state.activePreset) return;
+            const preset = AurasPresets.state.presets.find(one => one.id === AurasPresets.state.activePreset);
+            if(!preset) return;
+            const auras = preset.auras;
+
+            const activeIndexes = [];
+            auras.forEach(({uuid, effort}) => {
+                const index = aurasList.findIndex(one => one.uuid === uuid);
+                if(index > -1) {
+                    activeIndexes.push({index, effort});
+                }
+            });
+            return { activeIndexes };
+        }
+
+        static getState() {
+            return {
+                ...AurasPresets.state,
+                defaultPreset: AurasPresets.initializePreset(),
+            }
+        }
+
+    }
+
     class BasicAuras {
 
         static state = {
@@ -2160,6 +2275,9 @@
         }
 
         static giveToPlayer(aura) {
+            if(!aura.uuid) {
+                aura.uuid = v4();
+            }
             if(BasicAuras.state.auras.length > 50) return;
             if(BasicAuras.state.filterMinTier && aura.tier < BasicAuras.state.filterMinTier) return;
             if(BasicAuras.state.filterMinQuality && !Number.isNaN(BasicAuras.state.filterMinQuality)
@@ -2285,6 +2403,11 @@
         }
 
         static process(dT) {
+            BasicAuras.state.auras.forEach((aura, index) => {
+                if(!aura.uuid) {
+                    BasicAuras.state.auras[index].uuid = v4();
+                }
+            });
             const manaIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'mana'), { auras: [] });
             if(manaIncome <= 0) return;
             BasicAuras.state.activeIndexes.forEach((one, ind) => {
@@ -2309,11 +2432,25 @@
                 filterMinTier: BasicAuras.state.filterMinTier,
                 filterMinQuality: BasicAuras.state.filterMinQuality,
                 chargeAmount: BasicAuras.state.chargeAmount,
+                presets: AurasPresets.getState(),
+                max: BasicAuras.getMax(),
             });
         }
 
         static aurasUnlocked() {
             return BasicResearch.getResearchLevel('auras') > 0;
+        }
+
+        static updatePreset(id) {
+            AurasPresets.setUsedPreset(id);
+            if(id) {
+                const indexes = AurasPresets.assignAccordingToPreset(BasicAuras.state.auras);
+                console.log('Selected indexes: ', indexes);
+                BasicAuras.state.activeIndexes = indexes.activeIndexes.map(({ index, effort }) => ({
+                    index,
+                    effort,
+                }));
+            }
         }
 
     }
@@ -3944,7 +4081,7 @@
                         /*if(BasicResearch.getResearchLevel('memoryStones') > 0) {
                             BasicResources.add('memoryStones', (0.4 + 0.6* Math.random())*Math.pow(1.2,BasicMap.state.bossesArena?.level || 0));
                         }*/
-                        const hr = HeirloomGenerator.generateProbabilityBasedFromBoss(20 + 2*BasicMap.state.bossesArena?.level || 0, 0.1);
+                        const hr = HeirloomGenerator.generateProbabilityBasedFromBoss(20 + 2*BasicMap.state.bossesArena?.maxBossLevel || 0, 0.1);
                         if(hr) {
                             BasicHeirlooms.giveToPlayer(hr);
                             BasicStatistics.inc('heirloomsDropped', 1);
@@ -3952,7 +4089,7 @@
                         }
 
                         BasicMap.state.bossesArena.level++;
-                        BasicMap.state.bossesArena.maxBossLevel = BasicMap.state.bossesArena.level;
+                        BasicMap.state.bossesArena.maxBossLevel = Math.max(BasicMap.state.bossesArena.maxBossLevel || 0, BasicMap.state.bossesArena.level);
 
                         BasicFight.isInProgress = false;
                         // BasicMap.state.isTurnedOn = false;
@@ -4285,9 +4422,9 @@
         name: 'Heirloom Compactification',
         description: 'Each level adds +1 slot to saved heirlooms',
         isUnlocked: () => BasicResearch.getTotal('looting') > 4,
-        maxLevel: 3,
+        maxLevel: 5,
         getCost: (level) => ({
-            research: 1.e+15*Math.pow(1000, level*level),
+            research: 1.e+15*Math.pow(100, level*level),
         }),
     },{ // Changed
         id: 'levitation',
@@ -5275,6 +5412,18 @@
                 * Math.pow(1.05, BasicResearch.getResearchLevel('levitation'));
         }
 
+        static getBuildUntil1secondAmount(id) {
+            // trickiest part is to determine where we hit this 1 second.
+            const data = buildingData.find(one => one.id === id);
+            const pLev = BasicBuilding.buildings[id]?.level || 0;
+            const levInQueue = BasicBuilding.buildingQueue.filter(one => one.id === id).length;
+            const startingLevel = pLev + levInQueue;
+            let lvl = startingLevel;
+            let price = data.getConstructionAmount(lvl) / BasicBuilding.getBuildingCapability();
+            if(price > 1) return 0;
+            return Math.floor(Math.log2(1/price));
+        }
+
         static getUsedTerritory() {
             let usedLand = 0;
             for(const key in BasicBuilding.buildings) {
@@ -5401,6 +5550,7 @@
                     isEmbedMemoryStoneUnlocked: (BasicResearch.getResearchLevel('buildingMemory') > 0) && one.category !== 'Megastructure',
                     embedMemoryStoneCost,
                     embedMemoryStoneAvailable: embedMemoryStoneCost && embedMemoryStoneCost <= BasicResources.resources.memoryStones,
+                    buildUntil1SecondAmount: BasicBuilding.getBuildUntil1secondAmount(one.id)
                 }
             });
 
@@ -5409,6 +5559,19 @@
                 queue,
                 maxQueue: BasicBuilding.getMaxQueue(),
                 timeQueued: timeTotal < 1.e+30 ? secondsToHms(timeTotal) : 'Never'
+            }
+        }
+
+        static startBuildingUntil1Second(id) {
+            const N = BasicBuilding.getBuildUntil1secondAmount(id);
+            const maxQueue = BasicBuilding.getMaxQueue();
+            const realBuild = Math.min(N, maxQueue - BasicBuilding.buildingQueue.length);
+            if(realBuild > 0) {
+                BasicBuilding.buildingQueue.push(...(Array.from({ length: realBuild }).map(one => ({
+                    id,
+                    isPurchased: false,
+                    buildingProgress: 0,
+                }))));
             }
         }
 
@@ -5472,6 +5635,12 @@
             const [firstInQueue] = BasicBuilding.buildingQueue;
 
             const data = buildingData.find(one => one.id === firstInQueue.id);
+
+            if(!BasicBuilding.buildings[firstInQueue.id]) {
+                BasicBuilding.buildings[firstInQueue.id] = {
+                    level: 0,
+                };
+            }
 
             if(!firstInQueue.isPurchased) {
                 const cost = data.getCost(BasicBuilding.buildings[firstInQueue.id].level);
@@ -7849,6 +8018,19 @@
             )*Math.pow(1.25, BasicBuilding.getBuildingLevel('dragonVault')),
         getIncome: () => 0,
     },{
+        id: 'dragonithe',
+        name: 'Dragonite',
+        isUnlocked: () => BasicResearch.getResearchLevel('dragoniteSmelting'),
+        getMax: () => (2 * BasicBuilding.getBuildingLevel('warehouse')
+                + 50 * BasicBuilding.getBuildingLevel('harbour')) * (
+                1 + 0.2 * BasicResearch.getResearchLevel('logistics')
+            ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
+            * (1 + BasicAuras.getEffect('dragoniteMax')) * (BasicResearch.getResearchLevel('advancedLogistics')
+                    ? Math.pow(1.1, BasicBuilding.getBuildingLevel('warehouse'))
+                    : 1
+            )*Math.pow(1.25, BasicBuilding.getBuildingLevel('dragonVault')),
+        getIncome: () => 0,
+    },{
         id: 'tools',
         name: 'Tools',
         isUnlocked: () => BasicBuilding.getBuildingLevel('forge') > 0,
@@ -7907,19 +8089,6 @@
         name: 'Charge Gem',
         isUnlocked: () => BasicResearch.getResearchLevel('auraCharging'),
         getMax: () => 0,
-        getIncome: () => 0,
-    },{
-        id: 'dragonithe',
-        name: 'Dragonite',
-        isUnlocked: () => BasicResearch.getResearchLevel('dragoniteSmelting'),
-        getMax: () => (2 * BasicBuilding.getBuildingLevel('warehouse')
-                + 50 * BasicBuilding.getBuildingLevel('harbour')) * (
-                1 + 0.2 * BasicResearch.getResearchLevel('logistics')
-            ) * (1 + getPackingEffect() * (BasicActions.actions.packingSpell?.performed || 0))
-            * (1 + BasicAuras.getEffect('dragoniteMax')) * (BasicResearch.getResearchLevel('advancedLogistics')
-                    ? Math.pow(1.1, BasicBuilding.getBuildingLevel('warehouse'))
-                    : 1
-            )*Math.pow(1.25, BasicBuilding.getBuildingLevel('dragonVault')),
         getIncome: () => 0,
     }
 
@@ -8329,6 +8498,7 @@
 
         static toSaveString() {
             const saveObject = {
+                aurasPresets: AurasPresets.state || {},
                 resources: BasicResources.resources,
                 actions: BasicActions.actions,
                 shopItems: ShopItems.purchased,
@@ -8355,8 +8525,12 @@
                 lastSave: Date.now(),
                 statistics: BasicStatistics.data,
             };
+            const saveString = JSON.stringify(saveObject);
             console.log('saving: ', saveObject);
-            return JSON.stringify(saveObject);
+            if(!saveObject.aurasPresets) {
+                console.error('auraPresets not found');
+            }
+            return saveString;
         }
 
         static saveStringToGame(saveString) {
@@ -8397,12 +8571,14 @@
             }
             BasicHeirlooms.state = save.heirlooms || BasicHeirlooms.initialize();
             BasicAuras.state = save.auras || BasicAuras.initialize();
+            AurasPresets.state = save.aurasPresets || AurasPresets.initialize();
             BasicStatistics.data = save.statistics || BasicStatistics.initialize();
             const now = Date.now();
             if(save.lastSave && now - save.lastSave > 30000) {
                 const gain = (now - save.lastSave - 10000) / 1000;
                 BasicResources.add('condensedTime', gain);
             }
+            console.log('loadedAuraPresets: ', AurasPresets.state, save.aurasPresets, saveString);
         }
 
         static save() {
@@ -8657,6 +8833,10 @@
         BasicBuilding.startBuilding(id);
     });
 
+    ColibriWorker.on('do_build_1s', ({ id }) => {
+        BasicBuilding.startBuildingUntil1Second(id);
+    });
+
     ColibriWorker.on('cancel_build', ({ index }) => {
         BasicBuilding.cancelBuilding(index);
     });
@@ -8692,6 +8872,15 @@
 
     ColibriWorker.on('change_aura_minquality', ({ quality }) => {
         BasicAuras.setMinQuality(quality);
+    });
+
+
+    ColibriWorker.on('save_aura_preset', ({ isNew, current }) => {
+        AurasPresets.savePreset(isNew, current);
+    });
+
+    ColibriWorker.on('use_aura_preset', ({ id }) => {
+        BasicAuras.updatePreset(id);
     });
 
 }));

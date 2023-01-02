@@ -1421,7 +1421,7 @@
     }, VirtualDOM.createVirtualElement("p", {
       className: 'popup-link',
       onClick: showVersion
-    }, "v0.2.3a"), VirtualDOM.createVirtualElement("p", {
+    }, "v0.2.4"), VirtualDOM.createVirtualElement("p", {
       className: 'popup-link',
       onClick: showAbout
     }, "About"), VirtualDOM.createVirtualElement("p", null, VirtualDOM.createVirtualElement("a", {
@@ -1752,16 +1752,16 @@
       State.setState('game.creatures.jobs', payload);
     });
 
-    const setPresetName = name => {
+    const setPresetName$1 = name => {
       State.setState(`game.creatures.ui.editingPreset.name`, name);
     };
 
-    const setPresetEditedId = id => {
+    const setPresetEditedId$1 = id => {
       console.log('setEditing: ', id);
       State.setState('game.creatures.ui.editingPresetId', id);
     };
 
-    const setPresetEdited = id => {
+    const setPresetEdited$1 = id => {
       const jobs = State.queryState('game.creatures.jobs', {});
       let currentPresetData;
 
@@ -1793,11 +1793,11 @@
       State.setState(`game.creatures.ui.editingPreset`, current);
     };
 
-    const closeEditPreset = () => {
+    const closeEditPreset$1 = () => {
       State.setState(`game.creatures.ui.editingPreset`, null);
     };
 
-    const savePreset = isNew => {
+    const savePreset$1 = isNew => {
       const current = State.queryState('game.creatures.ui.editingPreset');
       const payload = {
         isNew,
@@ -1805,10 +1805,10 @@
       };
       console.log('saving', payload);
       ColibriClient.sendToWorker('save_preset', payload);
-      closeEditPreset();
+      closeEditPreset$1();
     };
 
-    const setPresetUsedId = id => {
+    const setPresetUsedId$1 = id => {
       console.log('use preset: ', id);
       ColibriClient.sendToWorker('use_preset', {
         id
@@ -1826,7 +1826,7 @@
       ColibriClient.sendToWorker('re_distribute', {});
     };
 
-    const PresetEditor = ({
+    const PresetEditor$1 = ({
       jobs,
       editingPresetId,
       editingPreset
@@ -1837,15 +1837,15 @@
         className: 'topActions flex'
       }, VirtualDOM.createVirtualElement("button", {
         className: 'main-action',
-        onClick: useCiCallback(isNew => savePreset(isNew), [!editingPreset.id])
+        onClick: useCiCallback(isNew => savePreset$1(isNew), [!editingPreset.id])
       }, "Save changes"), VirtualDOM.createVirtualElement("button", {
         className: 'main-action',
-        onClick: useCiCallback(() => closeEditPreset())
+        onClick: useCiCallback(() => closeEditPreset$1())
       }, "Close Preset")), VirtualDOM.createVirtualElement("div", {
         className: 'flex name'
       }, VirtualDOM.createVirtualElement("p", null, "Preset name: "), VirtualDOM.createVirtualElement("input", {
         value: editingPreset.name,
-        onChange: useCiCallback(e => setPresetName(e.target.value))
+        onChange: useCiCallback(e => setPresetName$1(e.target.value))
       })), VirtualDOM.createVirtualElement("div", {
         className: 'rules'
       }, jobs?.jobs?.map(job => {
@@ -1974,7 +1974,7 @@
       }, VirtualDOM.createVirtualElement("p", null, "Select creatures preset. Once selected, all free creatures will be assigned their jobs automatically "), VirtualDOM.createVirtualElement("div", {
         className: 'flex preset-controls'
       }, VirtualDOM.createVirtualElement("select", {
-        onChange: useCiCallback(e => setPresetUsedId(e.target.value))
+        onChange: useCiCallback(e => setPresetUsedId$1(e.target.value))
       }, VirtualDOM.createVirtualElement("option", {
         selected: !presets.activePreset
       }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
@@ -1999,11 +1999,11 @@
         className: 'create'
       }, VirtualDOM.createVirtualElement("button", {
         className: 'main-action',
-        onClick: useCiCallback(() => setPresetEdited(''), [])
+        onClick: useCiCallback(() => setPresetEdited$1(''), [])
       }, "Create preset")), VirtualDOM.createVirtualElement("div", {
         className: 'edit'
       }, VirtualDOM.createVirtualElement("select", {
-        onChange: useCiCallback(e => setPresetEditedId(e.target.value))
+        onChange: useCiCallback(e => setPresetEditedId$1(e.target.value))
       }, VirtualDOM.createVirtualElement("option", {
         selected: !editedId
       }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
@@ -2011,7 +2011,7 @@
         value: preset.id
       }, preset.name))), VirtualDOM.createVirtualElement("button", {
         className: 'main-action',
-        onClick: useCiCallback(editedId => setPresetEdited(editedId), [editedId])
+        onClick: useCiCallback(editedId => setPresetEdited$1(editedId), [editedId])
       }, "Edit preset"))))));
     };
     const Creatures = () => {
@@ -2038,7 +2038,7 @@
         info: info,
         presets: jobs?.presets,
         editedId: editingPresetId
-      }), editingPreset ? VirtualDOM.createVirtualElement(PresetEditor, {
+      }), editingPreset ? VirtualDOM.createVirtualElement(PresetEditor$1, {
         jobs: jobs,
         editingPresetId: editingPresetId,
         editingPreset: editingPreset
@@ -3062,6 +3062,12 @@
       });
     };
 
+    const doBuild1S = id => {
+      ColibriClient.sendToWorker('do_build_1s', {
+        id
+      });
+    };
+
     const doEmbedMemory = id => {
       console.log('do embed', id);
       ColibriClient.sendToWorker('embed_memory', {
@@ -3124,11 +3130,17 @@
       className: 'time'
     }, "Time: ", one.timeFmt)), VirtualDOM.createVirtualElement("div", {
       className: 'build-wrap'
+    }, VirtualDOM.createVirtualElement("div", {
+      className: 'flex buttons-wrap'
     }, VirtualDOM.createVirtualElement("button", {
       className: 'main-action',
       onClick: useCiCallback(id => doBuild(id), [one.id]),
       disabled: !one.isAvailable || isFull || !one.isUnlocked
-    }, "Build"), one.isEmbedMemoryStoneUnlocked ? VirtualDOM.createVirtualElement("div", {
+    }, "Build"), one.buildUntil1SecondAmount ? VirtualDOM.createVirtualElement("button", {
+      className: 'main-action',
+      onClick: useCiCallback(id => doBuild1S(id), [one.id]),
+      disabled: !one.isAvailable || isFull || !one.isUnlocked
+    }, `Build to 1s.`) : null), one.isEmbedMemoryStoneUnlocked ? VirtualDOM.createVirtualElement("div", {
       className: 'embed-block'
     }, one.memoryEmbedded ? VirtualDOM.createVirtualElement("p", null, `Will save ${one.memoryEmbedded} levels on next reset`) : null, one.embedMemoryStoneCost ? VirtualDOM.createVirtualElement("p", {
       className: 'embed-cost'
@@ -3436,7 +3448,7 @@
       })));
     };
 
-    var css_248z$3 = ".aura-container .aura-settings {\r\n    background: #030304;\r\n    padding: 20px;\r\n    margin-bottom: 10px;\r\n}\r\n\r\n.aura-rows {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.aura-container .aura-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n\r\n.aura-container .aura-row .aura-title {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row > div {\r\n    width: 200px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar .outer-span {\r\n    width: 300px;\r\n}\r\n.aura-container .aura-row .xp-bar .tiny {\r\n    font-size: 12px;\r\n    text-align: right;\r\n    margin: 0;\r\n}\r\n\r\n\r\n.aura-container .aura-row .actions {\r\n    display: block;\r\n}\r\n\r\n.aura-container .aura-row .actions .effort {\r\n    margin: 0 5px;\r\n}\r\n\r\n.learning-slider {\r\n    width: 190px;\r\n}\r\n\r\n.aura-input {\r\n    width: 200px;\r\n    margin-top: 5px;\r\n}\r\n\r\n.aura-blocks {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n}\r\n\r\n.aura-block {\r\n    width: 280px;\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin: 5px;\r\n    height: 250px;\r\n}\r\n\r\n.aura-block-inner {\r\n    height: 190px;\r\n}\r\n\r\n.aura-block .actions {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    bottom: 10px;\r\n}\r\n\r\n.aura-title .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.aura-title .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.aura-title .tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.aura-title .tier-4 {\r\n    color: #71f119;\r\n}\r\n\r\n.quality {\r\n    font-style: italic;\r\n    margin: 15px 0;\r\n}\r\n\r\n.charge-block .charge input {\r\n    width: 60px;\r\n    height: 24px;\r\n    margin-left: 5px;\r\n    margin-right: 5px;\r\n}\r\n\r\n.charge-block .charge button {\r\n    width: 140px;\r\n}\r\n\r\n.aura-row .charge .cost.missing {\r\n    color: #ad2121;\r\n}\r\n\r\n.charge-amount {\r\n    margin-left: 5px;\r\n    color: #ffffff;\r\n    font-weight: normal;\r\n}\r\n\r\n.charge-amount .charge-icon {\r\n    display: inline-block;\r\n    height: 16px;\r\n    width: 16px;\r\n    padding-top: 3px;\r\n    position: relative;\r\n}\r\n\r\n.charge-amount .charge-icon img {\r\n    width: 16px;\r\n    height: 16px;\r\n    position: absolute;\r\n}";
+    var css_248z$3 = ".aura-container .aura-settings {\r\n    background: #030304;\r\n    padding: 20px;\r\n    margin-bottom: 10px;\r\n}\r\n\r\n.aura-rows {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.aura-container .aura-row {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    align-items: center;\r\n}\r\n\r\n.aura-container .aura-row .aura-title {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row > div {\r\n    width: 200px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar {\r\n    width: 300px;\r\n}\r\n\r\n.aura-container .aura-row .xp-bar .outer-span {\r\n    width: 300px;\r\n}\r\n.aura-container .aura-row .xp-bar .tiny {\r\n    font-size: 12px;\r\n    text-align: right;\r\n    margin: 0;\r\n}\r\n\r\n\r\n.aura-container .aura-row .actions {\r\n    display: block;\r\n}\r\n\r\n.aura-container .aura-row .actions .effort {\r\n    margin: 0 5px;\r\n}\r\n\r\n.learning-slider {\r\n    width: 190px;\r\n}\r\n\r\n.aura-input {\r\n    width: 200px;\r\n    margin-top: 5px;\r\n}\r\n\r\n.aura-blocks {\r\n    display: flex;\r\n    flex-wrap: wrap;\r\n}\r\n\r\n.aura-block {\r\n    width: 280px;\r\n    background: #030304;\r\n    padding: 10px;\r\n    margin: 5px;\r\n    height: 250px;\r\n}\r\n\r\n.aura-block-inner {\r\n    height: 190px;\r\n}\r\n\r\n.aura-block .actions {\r\n    display: flex;\r\n    justify-content: space-between;\r\n    bottom: 10px;\r\n}\r\n\r\n.aura-title .tier-1 {\r\n    color: #7191d9;\r\n}\r\n\r\n.aura-title .tier-2 {\r\n    color: #d1c119;\r\n}\r\n\r\n.aura-title .tier-3 {\r\n    color: #f17119;\r\n}\r\n\r\n.aura-title .tier-4 {\r\n    color: #71f119;\r\n}\r\n\r\n.quality {\r\n    font-style: italic;\r\n    margin: 15px 0;\r\n}\r\n\r\n.charge-block .charge input {\r\n    width: 60px;\r\n    height: 24px;\r\n    margin-left: 5px;\r\n    margin-right: 5px;\r\n}\r\n\r\n.charge-block .charge button {\r\n    width: 140px;\r\n}\r\n\r\n.aura-row .charge .cost.missing {\r\n    color: #ad2121;\r\n}\r\n\r\n.charge-amount {\r\n    margin-left: 5px;\r\n    color: #ffffff;\r\n    font-weight: normal;\r\n}\r\n\r\n.charge-amount .charge-icon {\r\n    display: inline-block;\r\n    height: 16px;\r\n    width: 16px;\r\n    padding-top: 3px;\r\n    position: relative;\r\n}\r\n\r\n.charge-amount .charge-icon img {\r\n    width: 16px;\r\n    height: 16px;\r\n    position: absolute;\r\n}\r\n\r\n.preset-box .in-preset .aura-block {\r\n    height: 300px;\r\n}";
     styleInject(css_248z$3);
 
     const dropAura = index => {
@@ -3509,6 +3521,232 @@
       });
     };
 
+    const setPresetName = name => {
+      State.setState(`game.auras.ui.editingPreset.name`, name);
+    };
+
+    const setPresetEditedId = id => {
+      console.log('setEditing: ', id);
+      State.setState('game.auras.ui.editingPresetId', id);
+    };
+
+    const setPresetEdited = id => {
+      const data = State.queryState('game.auras.data', {});
+      let currentPresetData;
+
+      if (id) {
+        currentPresetData = data.presets?.presets?.find(one => one.id === id);
+      }
+
+      if (!currentPresetData) {
+        currentPresetData = data.presets?.defaultPreset;
+      }
+
+      console.log('open: ', id, data, currentPresetData);
+      State.setState('game.auras.ui.editingPreset', currentPresetData);
+    };
+
+    const putAuraToPreset = auraUuid => {
+      if (!auraUuid) {
+        console.error('No uuid passed');
+      }
+
+      const current = State.queryState('game.auras.ui.editingPreset');
+      current.auras.push({
+        uuid: auraUuid,
+        effort: 0
+      });
+      State.setState(`game.auras.ui.editingPreset`, current);
+    };
+
+    const setAuraEffortInPreset = (uuid, effort) => {
+      const current = State.queryState('game.auras.ui.editingPreset');
+      const index = current.auras.findIndex(one => one.uuid === uuid);
+
+      if (index < 0) {
+        console.error('Invalid aura uuid passed', uuid, current);
+        return;
+      }
+
+      current.auras[index].effort = +effort / 100;
+      State.setState(`game.auras.ui.editingPreset`, current);
+    };
+
+    const dropAuraFromPreset = uuid => {
+      if (!uuid) {
+        console.error('No uuid passed');
+      }
+
+      const current = State.queryState('game.auras.ui.editingPreset');
+      const index = current.auras.findIndex(one => one.uuid === uuid);
+
+      if (index < 0) {
+        console.error('Invalid aura uuid passed', uuid, current);
+        return;
+      }
+
+      current.auras.splice(index, 1);
+      State.setState(`game.auras.ui.editingPreset`, current);
+    };
+
+    const closeEditPreset = () => {
+      State.setState(`game.auras.ui.editingPreset`, null);
+    };
+
+    const savePreset = isNew => {
+      const current = State.queryState('game.auras.ui.editingPreset');
+      const payload = {
+        isNew,
+        current
+      };
+      console.log('saving', payload);
+      ColibriClient.sendToWorker('save_aura_preset', payload);
+      closeEditPreset();
+    };
+
+    const setPresetUsedId = id => {
+      console.log('use preset: ', id);
+      ColibriClient.sendToWorker('use_aura_preset', {
+        id
+      });
+    };
+
+    const AuraPresets = ({
+      presets,
+      editedId
+    }) => {
+      return VirtualDOM.createVirtualElement("div", {
+        className: 'preset-editor-wrap'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'flex used-preset'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'select'
+      }, VirtualDOM.createVirtualElement("p", null, "Select auras preset."), VirtualDOM.createVirtualElement("div", {
+        className: 'flex preset-controls'
+      }, VirtualDOM.createVirtualElement("select", {
+        onChange: useCiCallback(e => setPresetUsedId(e.target.value))
+      }, VirtualDOM.createVirtualElement("option", {
+        value: '',
+        selected: !presets.activePreset
+      }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
+        selected: presets.activePreset === preset.id,
+        value: preset.id
+      }, preset.name)))))), VirtualDOM.createVirtualElement("div", {
+        className: 'create-edit'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'flex'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'create'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(() => setPresetEdited(''), [])
+      }, "Create preset")), VirtualDOM.createVirtualElement("div", {
+        className: 'edit'
+      }, VirtualDOM.createVirtualElement("select", {
+        onChange: useCiCallback(e => setPresetEditedId(e.target.value))
+      }, VirtualDOM.createVirtualElement("option", {
+        selected: !editedId
+      }, "None"), presets?.presets?.map(preset => VirtualDOM.createVirtualElement("option", {
+        selected: editedId === preset.id,
+        value: preset.id
+      }, preset.name))), VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(editedId => setPresetEdited(editedId), [editedId])
+      }, "Edit preset")))));
+    };
+    const PresetEditor = ({
+      auras,
+      editingPreset,
+      editingPresetId,
+      maxAuras
+    }) => {
+      const aurasInPreset = auras.filter(one => editingPreset.auras.find(it => one.uuid === it.uuid)).map(one => ({ ...one,
+        effort: editingPreset.auras.find(it => one.uuid === it.uuid).effort
+      }));
+      const aurasOutOfPreset = auras.filter(one => !editingPreset.auras.find(it => one.uuid === it.uuid));
+      return VirtualDOM.createVirtualElement("div", {
+        className: 'preset-box'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'topActions flex'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(isNew => savePreset(isNew), [!editingPreset.id])
+      }, "Save changes"), VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(() => closeEditPreset())
+      }, "Close Preset")), VirtualDOM.createVirtualElement("div", {
+        className: 'flex name'
+      }, VirtualDOM.createVirtualElement("p", null, "Preset name: "), VirtualDOM.createVirtualElement("input", {
+        value: editingPreset.name,
+        onChange: useCiCallback(e => setPresetName(e.target.value))
+      })), VirtualDOM.createVirtualElement("div", {
+        className: 'aura-container in-preset'
+      }, VirtualDOM.createVirtualElement("h2", null, `Auras in preset: ${(editingPreset.auras || []).length} of ${maxAuras}`), VirtualDOM.createVirtualElement("div", {
+        className: 'aura-blocks'
+      }, aurasInPreset ? aurasInPreset.map(one => VirtualDOM.createVirtualElement("div", {
+        className: `aura-block`,
+        id: `aura-row-${one.index}`
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'aura-block-inner'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'aura-title'
+      }, VirtualDOM.createVirtualElement("p", {
+        className: `tier-${one.tier}`
+      }, one.name, " [", one.level, "]", one.charge > 1 ? VirtualDOM.createVirtualElement("span", {
+        className: 'charge-amount'
+      }, VirtualDOM.createVirtualElement(Icon, {
+        scope: 'ui',
+        id: 'charge',
+        className: 'charge-icon'
+      }), VirtualDOM.createVirtualElement("span", {
+        className: 'charged-by'
+      }, `x${fmtVal(one.charge)}`), " ") : null)), VirtualDOM.createVirtualElement("div", {
+        className: 'description'
+      }, VirtualDOM.createVirtualElement("p", {
+        className: 'quality'
+      }, "Quality: ", fmtVal(100 * one.quality), "%"), one.bonuses.map(bonus => VirtualDOM.createVirtualElement("p", null, bonus.text)))), VirtualDOM.createVirtualElement("div", {
+        className: 'effort-controls'
+      }, VirtualDOM.createVirtualElement("p", null, "Set default efforts percentage"), VirtualDOM.createVirtualElement("input", {
+        value: one.effort,
+        onChange: useCiCallback((uuid, e) => setAuraEffortInPreset(uuid, e.target.value), [one.uuid])
+      })), VirtualDOM.createVirtualElement("div", {
+        className: 'actions'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(uuid => dropAuraFromPreset(uuid), [one.uuid])
+      }, "Remove from preset")))) : VirtualDOM.createVirtualElement("p", null, "No active auras"))), VirtualDOM.createVirtualElement("div", {
+        className: 'aura-container'
+      }, VirtualDOM.createVirtualElement("h2", null, "All auras"), VirtualDOM.createVirtualElement("div", {
+        className: 'aura-blocks'
+      }, aurasOutOfPreset ? aurasOutOfPreset.map(one => VirtualDOM.createVirtualElement("div", {
+        className: `aura-block`,
+        id: `aura-row-${one.index}`
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'aura-block-inner'
+      }, VirtualDOM.createVirtualElement("div", {
+        className: 'aura-title'
+      }, VirtualDOM.createVirtualElement("p", {
+        className: `tier-${one.tier}`
+      }, one.name, " [", one.level, "]", one.charge > 1 ? VirtualDOM.createVirtualElement("span", {
+        className: 'charge-amount'
+      }, VirtualDOM.createVirtualElement(Icon, {
+        scope: 'ui',
+        id: 'charge',
+        className: 'charge-icon'
+      }), VirtualDOM.createVirtualElement("span", {
+        className: 'charged-by'
+      }, `x${fmtVal(one.charge)}`), " ") : null)), VirtualDOM.createVirtualElement("div", {
+        className: 'description'
+      }, VirtualDOM.createVirtualElement("p", {
+        className: 'quality'
+      }, "Quality: ", fmtVal(100 * one.quality), "%"), one.bonuses.map(bonus => VirtualDOM.createVirtualElement("p", null, bonus.text)))), VirtualDOM.createVirtualElement("div", {
+        className: 'actions'
+      }, VirtualDOM.createVirtualElement("button", {
+        className: 'main-action',
+        onClick: useCiCallback(uuid => putAuraToPreset(uuid), [one.uuid]),
+        disabled: aurasInPreset.length >= maxAuras
+      }, "Add to preset")))) : VirtualDOM.createVirtualElement("p", null, "No auras available"))));
+    };
     const ActiveAuras = ({
       auras,
       filter,
@@ -3662,6 +3900,7 @@
     };
     const Auras = () => {
       const auras = State.queryState('game.auras.data.list', []);
+      const maxAuras = State.queryState('game.auras.data.max', 0);
       const filter = State.queryState('game.auras.data.filterMinTier', 0);
       const filterQuality = State.queryState('game.auras.data.filterMinQuality', 0);
       const chargeAmount = State.queryState('game.auras.data.chargeAmount', 1);
@@ -3670,7 +3909,18 @@
       const controlsSettings = State.queryState('game.general.settings.inputControls.auras', 'both');
       const activeAuras = auras.filter(one => one.isTurnedOn);
       const allAuras = auras.filter(one => !one.isTurnedOn);
-      return VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(ActiveAuras, {
+      const aurasPresets = State.queryState('game.auras.data.presets', []);
+      const editingPreset = State.queryState('game.auras.ui.editingPreset', null);
+      const editingPresetId = State.queryState('game.auras.ui.editingPresetId', null);
+      return VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(AuraPresets, {
+        presets: aurasPresets,
+        editedId: editingPresetId
+      }), editingPreset ? VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(PresetEditor, {
+        auras: auras,
+        editingPresetId: editingPresetId,
+        editingPreset: editingPreset,
+        maxAuras: maxAuras
+      })) : VirtualDOM.createVirtualElement("div", null, VirtualDOM.createVirtualElement(ActiveAuras, {
         auras: activeAuras,
         filter: filter,
         filterQuality: filterQuality,
@@ -3678,7 +3928,7 @@
         chargeAmount: chargeAmount
       }), VirtualDOM.createVirtualElement(AllAuras, {
         auras: allAuras
-      }));
+      })));
     };
 
     var css_248z$2 = "\r\n.statistics {\r\n    background: #030304;\r\n    padding: 20px;\r\n}\r\n\r\n.statistics .statistics-row {\r\n    display: flex;\r\n    padding: 10px 0;\r\n    border-bottom: 1px solid #071211;\r\n}\r\n\r\n.statistics-row .statistics-title {\r\n    width: 50%;\r\n}\r\n\r\n.statistics-row .statistics-value {\r\n    width: 20%;\r\n}\r\n\r\n.statistics .statistics-row .head {\r\n    font-weight: bold;\r\n}";
@@ -3922,7 +4172,7 @@
       title: 'Version history'
     }, VirtualDOM.createVirtualElement("div", {
       className: 'version-items'
-    }, VirtualDOM.createVirtualElement("h5", null, "Version 0.2.3a (19.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when research income was calculated incorrectly when selected \"wise\" temper")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.3 (18.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added couple more new researches"), VirtualDOM.createVirtualElement("li", null, "Added new later game resources"), VirtualDOM.createVirtualElement("li", null, "Added new later game buildings"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "New aura and heirloom bonuses")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.2 (17.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added couple new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Added statistics page"), VirtualDOM.createVirtualElement("li", null, "Added ability to specify amount to charge heirlooms and auras"), VirtualDOM.createVirtualElement("li", null, "Added ability to fill value with suffixes"), VirtualDOM.createVirtualElement("li", null, "Current charge of heirlooms/auras are shown"), VirtualDOM.createVirtualElement("li", null, "Added ability to toggle notation type"), VirtualDOM.createVirtualElement("li", null, "Return some stones/gems amount when drop charged item")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.1a (15.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when heirlooms not displayed until refresh"), VirtualDOM.createVirtualElement("li", null, "Grammar fixes")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.1 (12.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when game was broken after prestige while using reset"), VirtualDOM.createVirtualElement("li", null, "Added setting for auto-distribute creatures (on/off)"), VirtualDOM.createVirtualElement("li", null, "Added text input to import save"), VirtualDOM.createVirtualElement("li", null, "Fixed text descriptions for shop items and researches")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.0 (11.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added creatures jobs preset (beta version)"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when creatures could die when you missing mana or gold"), VirtualDOM.createVirtualElement("li", null, "Rebalanced formula for stones and gems gain"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when heirlooms bonuses were calculated incorrectly after charge"), VirtualDOM.createVirtualElement("li", null, "Fixed some UI bugs and grammar mistakes")), VirtualDOM.createVirtualElement("h5", null, "Version 0.1.9 (10.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "You can now re-roll one of heirloom stats"), VirtualDOM.createVirtualElement("li", null, "Added later game researches and 2 new resources, unlocking new ways to empower your heirlooms and auras"), VirtualDOM.createVirtualElement("li", null, "Added new building, unlocked in later game"), VirtualDOM.createVirtualElement("li", null, "Added legendary tier to heirloom loot filter"), VirtualDOM.createVirtualElement("li", null, "Harbour now also provides storage for ore"), VirtualDOM.createVirtualElement("li", null, "Memory stones now persist through resets"), VirtualDOM.createVirtualElement("li", null, "Add input type setting for auras")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.8 (04.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Set all to value\" button on learning page"), VirtualDOM.createVirtualElement("li", null, "Bosses will now drop heirlooms (Up to legendary tier)"), VirtualDOM.createVirtualElement("li", null, "Added new heirlooms modifiers"), VirtualDOM.createVirtualElement("li", null, "Added new bosses")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.7 (03.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Optimize\" button next to banners, that should help get max out of your banners"), VirtualDOM.createVirtualElement("li", null, "Added total building queue time"), VirtualDOM.createVirtualElement("li", null, "Added 3 more later game researches and 4 buildings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6a (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when you can go negative on flasks"), VirtualDOM.createVirtualElement("li", null, "Added quality aura filter")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6 (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Banners now have diminishing effect after 10K amount"), VirtualDOM.createVirtualElement("li", null, "Added hint when it worth to convert banner tier (exchange arrows appear on top right of banner item block)"), VirtualDOM.createVirtualElement("li", null, "Added new megastructures"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game buildings and researches"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when endurance and aggression flasks effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Decreased costs of crafting"), VirtualDOM.createVirtualElement("li", null, "UI fixes for buildings queue")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.5 (27.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new flask types"), VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Updated sidebar UI - now resources displayed are configurable."), VirtualDOM.createVirtualElement("li", null, "Added new resource, providing possibility to persist buildings/captured territory through resets")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.4 (26.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Improved fighting mechanics: added new attributes, different enemy types"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game content - auras, providing various bonuses"), VirtualDOM.createVirtualElement("li", null, "Added boss arena mechanics (unlocked after you research building)"), VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs and grammar."), VirtualDOM.createVirtualElement("li", null, "Rebalanced heirloom drop rarity")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3a (14.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3 (12.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed old bug when energetic temper did not gave 10 free trainings"), VirtualDOM.createVirtualElement("li", null, "Moved Story and Settings to separate menu"), VirtualDOM.createVirtualElement("li", null, "Added hotkeys settings."), VirtualDOM.createVirtualElement("li", null, "Changed banners formula. Bonus now is calculated as (1+a*(1+b*(1+...)))"), VirtualDOM.createVirtualElement("li", null, "Change UI controls in learning page (similar to creatures tab)"), VirtualDOM.createVirtualElement("li", null, "Added \"Condensed time\", granted when you offline and allowing you to accelerate things")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2a (06.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed issue with buildings in queue can cause negative amount of gold"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when queue not saved"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some buildings effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when territory awards in some cases was incorrect")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2 (05.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added mega structures, that persist through reset."), VirtualDOM.createVirtualElement("li", null, "Added heirlooms (earned in fights, providing various bonuses, persist through reset)"), VirtualDOM.createVirtualElement("li", null, "Added building queue"), VirtualDOM.createVirtualElement("li", null, "Add couple new buildings, researches and resources"), VirtualDOM.createVirtualElement("li", null, "Add cooldown to banners prestige (45 seconds per run limitation)"), VirtualDOM.createVirtualElement("li", null, "Fixed rounding bugs, slider's  on creatures page, descriptions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.1 (30.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Updated UI for creature jobs selectors"), VirtualDOM.createVirtualElement("li", null, "Added ability to revert banners convesion"), VirtualDOM.createVirtualElement("li", null, "Added 2 new researches"), VirtualDOM.createVirtualElement("li", null, "Added new building"), VirtualDOM.createVirtualElement("li", null, "Fixed bugs when some buildings had no effect"), VirtualDOM.createVirtualElement("li", null, "Added notification settings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.0 (29.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added possibility to select your temper on prestige (providing certain bonuses to next run)"), VirtualDOM.createVirtualElement("li", null, "Banners tab now allows to convert 10% of your previous tier"), VirtualDOM.createVirtualElement("li", null, "Added new early-game shop items providing more automation and bigger bonuses to energe regeneration"), VirtualDOM.createVirtualElement("li", null, "Added more than 10 new researches, including ones that will make starting runs easier"), VirtualDOM.createVirtualElement("li", null, "Added new buildings"), VirtualDOM.createVirtualElement("li", null, "Increased fighting rewards"), VirtualDOM.createVirtualElement("li", null, "Improved UI (sidebar, learning controls, and other small fixes/improvements)"), VirtualDOM.createVirtualElement("li", null, "Added \"Purchase all available\" button in shop")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.4 (26.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added building mechanics (basics)"), VirtualDOM.createVirtualElement("li", null, "Added possibility to show purchased shop items"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when converting banners caused rewrite instead of add amount"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when green banner didn't affected gold from work on stable"), VirtualDOM.createVirtualElement("li", null, "Fixed export game issues (copy to buffer)")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.3 (22.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Balance update: increased max mana gain by courses, decreased tireless research effect"), VirtualDOM.createVirtualElement("li", null, "Added story page with current and passed milestones"), VirtualDOM.createVirtualElement("li", null, "Added resource balance to sidebar"), VirtualDOM.createVirtualElement("li", null, "Effects of all actions and spells are now shown"), VirtualDOM.createVirtualElement("li", null, "Improved shop items descriptions"), VirtualDOM.createVirtualElement("li", null, "Fixed grammar mistakes"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some content was not visible under specific screen resolutions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.2 (21.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added battle mechanics"), VirtualDOM.createVirtualElement("li", null, "Added researcher banner"), VirtualDOM.createVirtualElement("li", null, "UI fixes"))), VirtualDOM.createVirtualElement("div", {
+    }, VirtualDOM.createVirtualElement("h5", null, "Version 0.2.4 (30.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added aura presets"), VirtualDOM.createVirtualElement("li", null, "Added button \"Build up to 1 second\""), VirtualDOM.createVirtualElement("li", null, "Added more heirloom store slots"), VirtualDOM.createVirtualElement("li", null, "Heirloom drop on bosses is now based on max level of beaten boss")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.3a (19.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when research income was calculated incorrectly when selected \"wise\" temper")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.3 (18.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added couple more new researches"), VirtualDOM.createVirtualElement("li", null, "Added new later game resources"), VirtualDOM.createVirtualElement("li", null, "Added new later game buildings"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "New aura and heirloom bonuses")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.2 (17.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added couple new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Added statistics page"), VirtualDOM.createVirtualElement("li", null, "Added ability to specify amount to charge heirlooms and auras"), VirtualDOM.createVirtualElement("li", null, "Added ability to fill value with suffixes"), VirtualDOM.createVirtualElement("li", null, "Current charge of heirlooms/auras are shown"), VirtualDOM.createVirtualElement("li", null, "Added ability to toggle notation type"), VirtualDOM.createVirtualElement("li", null, "Return some stones/gems amount when drop charged item")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.1a (15.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when heirlooms not displayed until refresh"), VirtualDOM.createVirtualElement("li", null, "Grammar fixes")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.1 (12.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when game was broken after prestige while using reset"), VirtualDOM.createVirtualElement("li", null, "Added setting for auto-distribute creatures (on/off)"), VirtualDOM.createVirtualElement("li", null, "Added text input to import save"), VirtualDOM.createVirtualElement("li", null, "Fixed text descriptions for shop items and researches")), VirtualDOM.createVirtualElement("h5", null, "Version 0.2.0 (11.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added creatures jobs preset (beta version)"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when creatures could die when you missing mana or gold"), VirtualDOM.createVirtualElement("li", null, "Rebalanced formula for stones and gems gain"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when heirlooms bonuses were calculated incorrectly after charge"), VirtualDOM.createVirtualElement("li", null, "Fixed some UI bugs and grammar mistakes")), VirtualDOM.createVirtualElement("h5", null, "Version 0.1.9 (10.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "You can now re-roll one of heirloom stats"), VirtualDOM.createVirtualElement("li", null, "Added later game researches and 2 new resources, unlocking new ways to empower your heirlooms and auras"), VirtualDOM.createVirtualElement("li", null, "Added new building, unlocked in later game"), VirtualDOM.createVirtualElement("li", null, "Added legendary tier to heirloom loot filter"), VirtualDOM.createVirtualElement("li", null, "Harbour now also provides storage for ore"), VirtualDOM.createVirtualElement("li", null, "Memory stones now persist through resets"), VirtualDOM.createVirtualElement("li", null, "Add input type setting for auras")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.8 (04.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Set all to value\" button on learning page"), VirtualDOM.createVirtualElement("li", null, "Bosses will now drop heirlooms (Up to legendary tier)"), VirtualDOM.createVirtualElement("li", null, "Added new heirlooms modifiers"), VirtualDOM.createVirtualElement("li", null, "Added new bosses")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.7 (03.12.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added \"Optimize\" button next to banners, that should help get max out of your banners"), VirtualDOM.createVirtualElement("li", null, "Added total building queue time"), VirtualDOM.createVirtualElement("li", null, "Added 3 more later game researches and 4 buildings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6a (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed bug when you can go negative on flasks"), VirtualDOM.createVirtualElement("li", null, "Added quality aura filter")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.6 (29.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Banners now have diminishing effect after 10K amount"), VirtualDOM.createVirtualElement("li", null, "Added hint when it worth to convert banner tier (exchange arrows appear on top right of banner item block)"), VirtualDOM.createVirtualElement("li", null, "Added new megastructures"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game buildings and researches"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when endurance and aggression flasks effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Decreased costs of crafting"), VirtualDOM.createVirtualElement("li", null, "UI fixes for buildings queue")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.5 (27.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new flask types"), VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added new bosses"), VirtualDOM.createVirtualElement("li", null, "Updated sidebar UI - now resources displayed are configurable."), VirtualDOM.createVirtualElement("li", null, "Added new resource, providing possibility to persist buildings/captured territory through resets")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.4 (26.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Improved fighting mechanics: added new attributes, different enemy types"), VirtualDOM.createVirtualElement("li", null, "Added new mid-game content - auras, providing various bonuses"), VirtualDOM.createVirtualElement("li", null, "Added boss arena mechanics (unlocked after you research building)"), VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs and grammar."), VirtualDOM.createVirtualElement("li", null, "Rebalanced heirloom drop rarity")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3a (14.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed couple UI bugs")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.3 (12.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed old bug when energetic temper did not gave 10 free trainings"), VirtualDOM.createVirtualElement("li", null, "Moved Story and Settings to separate menu"), VirtualDOM.createVirtualElement("li", null, "Added hotkeys settings."), VirtualDOM.createVirtualElement("li", null, "Changed banners formula. Bonus now is calculated as (1+a*(1+b*(1+...)))"), VirtualDOM.createVirtualElement("li", null, "Change UI controls in learning page (similar to creatures tab)"), VirtualDOM.createVirtualElement("li", null, "Added \"Condensed time\", granted when you offline and allowing you to accelerate things")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2a (06.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Fixed issue with buildings in queue can cause negative amount of gold"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when queue not saved"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some buildings effect was calculated incorrectly"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when territory awards in some cases was incorrect")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.2 (05.11.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added mega structures, that persist through reset."), VirtualDOM.createVirtualElement("li", null, "Added heirlooms (earned in fights, providing various bonuses, persist through reset)"), VirtualDOM.createVirtualElement("li", null, "Added building queue"), VirtualDOM.createVirtualElement("li", null, "Add couple new buildings, researches and resources"), VirtualDOM.createVirtualElement("li", null, "Add cooldown to banners prestige (45 seconds per run limitation)"), VirtualDOM.createVirtualElement("li", null, "Fixed rounding bugs, slider's  on creatures page, descriptions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.1 (30.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Updated UI for creature jobs selectors"), VirtualDOM.createVirtualElement("li", null, "Added ability to revert banners convesion"), VirtualDOM.createVirtualElement("li", null, "Added 2 new researches"), VirtualDOM.createVirtualElement("li", null, "Added new building"), VirtualDOM.createVirtualElement("li", null, "Fixed bugs when some buildings had no effect"), VirtualDOM.createVirtualElement("li", null, "Added notification settings")), VirtualDOM.createVirtualElement("h4", null, "Version 0.1.0 (29.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added possibility to select your temper on prestige (providing certain bonuses to next run)"), VirtualDOM.createVirtualElement("li", null, "Banners tab now allows to convert 10% of your previous tier"), VirtualDOM.createVirtualElement("li", null, "Added new early-game shop items providing more automation and bigger bonuses to energe regeneration"), VirtualDOM.createVirtualElement("li", null, "Added more than 10 new researches, including ones that will make starting runs easier"), VirtualDOM.createVirtualElement("li", null, "Added new buildings"), VirtualDOM.createVirtualElement("li", null, "Increased fighting rewards"), VirtualDOM.createVirtualElement("li", null, "Improved UI (sidebar, learning controls, and other small fixes/improvements)"), VirtualDOM.createVirtualElement("li", null, "Added \"Purchase all available\" button in shop")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.4 (26.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added building mechanics (basics)"), VirtualDOM.createVirtualElement("li", null, "Added possibility to show purchased shop items"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when converting banners caused rewrite instead of add amount"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when green banner didn't affected gold from work on stable"), VirtualDOM.createVirtualElement("li", null, "Fixed export game issues (copy to buffer)")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.3 (22.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Balance update: increased max mana gain by courses, decreased tireless research effect"), VirtualDOM.createVirtualElement("li", null, "Added story page with current and passed milestones"), VirtualDOM.createVirtualElement("li", null, "Added resource balance to sidebar"), VirtualDOM.createVirtualElement("li", null, "Effects of all actions and spells are now shown"), VirtualDOM.createVirtualElement("li", null, "Improved shop items descriptions"), VirtualDOM.createVirtualElement("li", null, "Fixed grammar mistakes"), VirtualDOM.createVirtualElement("li", null, "Fixed bug when some content was not visible under specific screen resolutions")), VirtualDOM.createVirtualElement("h4", null, "Version 0.0.2 (21.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Added new researches"), VirtualDOM.createVirtualElement("li", null, "Added battle mechanics"), VirtualDOM.createVirtualElement("li", null, "Added researcher banner"), VirtualDOM.createVirtualElement("li", null, "UI fixes"))), VirtualDOM.createVirtualElement("div", {
       className: 'version-items'
     }, VirtualDOM.createVirtualElement("h4", null, "Version 0.0.1 (12.10.2022)"), VirtualDOM.createVirtualElement("ul", null, VirtualDOM.createVirtualElement("li", null, "Initial build"), VirtualDOM.createVirtualElement("li", null, "Include plenty shop items"), VirtualDOM.createVirtualElement("li", null, "Researches"), VirtualDOM.createVirtualElement("li", null, "Prestige layer (banners)")))), VirtualDOM.createVirtualElement(Modal, {
       modalId: 'about',
@@ -3964,6 +4214,7 @@
       State.setState('game.general', pl);
     });
     ColibriClient.on('save_to_local', data => {
+      localStorage.removeItem('localSave');
       localStorage.setItem('localSave', data);
     });
 
