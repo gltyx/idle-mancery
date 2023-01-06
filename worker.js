@@ -30,344 +30,6 @@
 
     }
 
-    const shopData = [{
-        id: 'notebook',
-        name: 'Notebook',
-        type: 'book',
-        description: 'A book for storing notes and goals. Adds 1 automation slot.',
-        isUnlocked: () => true,
-        getCost: () => ({
-            gold: 10,
-        }),
-    },{  // Changed
-        id: 'manual',
-        name: 'Labor Manual',
-        type: 'book',
-        description: 'A manual on effective laboring. Work at Stable gives twice as much gold at twice the cost.',
-        isUnlocked: () => true,
-        getCost: () => ({
-            gold: 10,
-        }),
-    },{ // Changed
-        id: 'gymnastics',
-        name: 'Gymnastic\'s manual',
-        type: 'book',
-        description: 'A manual for general exercising. Train stamina is now twice as efficient.',
-        isUnlocked: () => true,
-        getCost: () => ({
-            gold: 15,
-        }),
-    },{
-        id: 'pocket',
-        name: 'Coin Bag',
-        type: 'trinket',
-        description: 'A small coin bag that increases your maximum gold by 20.',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 15,
-        getCost: () => ({
-            gold: 20,
-        }),
-    },{
-        id: 'bookOfMagic',
-        name: 'Book of basic magic',
-        type: 'book',
-        description: 'Unlocks mana and some basic spells',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 25,
-        getCost: () => ({
-            gold: 40,
-        }),
-    },{
-        id: 'magicStamp',
-        name: 'Magic stamp',
-        type: 'trinket',
-        description: 'Provides ability to store more magic powers. +10 max mana, +25% spells power',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 55 && ShopItems.purchased.bookOfMagic,
-        getCost: () => ({
-            gold: 80,
-        }),
-    },{
-        id: 'equipment',
-        name: 'Training equipment',
-        type: 'trinket',
-        description: 'Increase your training efficiency by 100%',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 75,
-        getCost: () => ({
-            gold: 100
-        }),
-    },{
-        id: 'bookOfMeditation',
-        name: 'Book of meditation',
-        type: 'book',
-        description: 'Purchase book full of usefull meditation techniques. Meditation takes twice as much energy but provides 2x mana.',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 55,
-        getCost: () => ({
-            gold: 120,
-            energy: 30
-        }),
-    },{
-        id: 'shovel',
-        name: 'Shovel',
-        type: 'trinket',
-        description: 'Purchase a shovel to make your work even more efficient. Work takes 2 energy more but provides 2 more gold.',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 125,
-        getCost: () => ({
-            gold: 150,
-            energy: 30
-        }),
-    },{
-        id: 'timeManagement',
-        name: 'Time-management',
-        type: 'book',
-        description: 'Purchase time-management book to learn how to keep 2 actions auto-running',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 75,
-        getCost: () => ({
-            gold: 100
-        }),
-    },{
-        id: 'bargaging',
-        name: 'Bargaining',
-        type: 'book',
-        description: 'Learn basics of bargaining - improve your gold earned by 2 per work action',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 150,
-        getCost: () => ({
-            gold: 250
-        }),
-    },{ // Changed
-        id: 'stash',
-        name: 'Stash',
-        type: 'trinket',
-        description: 'Increases your maximum gold by 200',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 150,
-        getCost: () => ({
-            gold: 300
-        }),
-    },{ // Changed
-        id: 'summoning',
-        name: 'Basic summoning',
-        type: 'book',
-        description: 'Purchase basic Summoning manual',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 250,
-        getCost: () => ({
-            gold: 500
-        }),
-    },{
-        id: 'bookOfMultitasking',
-        name: 'Multi-tasking',
-        type: 'book',
-        description: 'Learn how to manage 2 more tasks simultaneously. More than 2 automations making you less efficient.',
-        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 400,
-        getCost: () => ({
-            gold: 600
-        }),
-    },{
-        id: 'manaOrb',
-        name: 'Mana orb',
-        type: 'trinket',
-        description: 'Purchase orb that improves your meditation. Meditation takes 10 more energy but provide 1 more mana',
-        isUnlocked: () =>resourcesData.find(one => one.id === 'gold').getMax() > 300,
-        getCost: () => ({
-            gold: 750,
-            energy: 100
-        }),
-    },{ 
-        id: 'betterSummoning',
-        name: 'Summoning Effiency',
-        type: 'book',
-        description: 'Purchase summoning efficiency book to decrease energy consumed by creatures by 0.5',
-        isUnlocked: () => ShopItems.purchased.summoning,
-        getCost: () => ({
-            gold: 1000
-        }),
-    },{ // Changed
-        id: 'herbalism',
-        name: 'Herbalism',
-        type: 'book',
-        description: 'Purchase herbalism book to start creation of flasks',
-        isUnlocked: () => ShopItems.purchased.summoning,
-        getCost: () => ({
-            gold: 1000
-        }),
-    },{
-        id: 'soulHarvester',
-        name: 'Soul harvester',
-        type: 'book',
-        description: 'Purchase knowledge of better soul harvesting',
-        isUnlocked: () => ShopItems.purchased.summoning,
-        getCost: () => ({
-            gold: 1500
-        }),
-    },{ // Changed
-        id: 'appretienceManual',
-        name: 'Manual of appretience',
-        type: 'book',
-        description: 'Empower all your spells by 50%',
-        isUnlocked: () => ShopItems.purchased.soulHarvester,
-        getCost: () => ({
-            gold: 2000
-        }),
-    },{ // Changed
-        id: 'summoningJobs',
-        name: 'Summoning Jobs',
-        type: 'book',
-        description: 'Purchase summoning jobs knowledge book to increase job efficiency. +10% creature production',
-        isUnlocked: () => ShopItems.purchased.summoning,
-        getCost: () => ({
-            gold: 4000
-        }),
-    },{
-        id: 'herbalistsStash',
-        name: 'Herbalists stash',
-        type: 'trinket',
-        description: 'Purchase special container for herbs. +20 max herbs.',
-        isUnlocked: () => ShopItems.purchased.herbalism,
-        getCost: () => ({
-            gold: 5000
-        }),
-    },{
-        id: 'herbalismKnowledge',
-        name: 'Advanced herbalism',
-        type: 'trinket',
-        description: 'Purchase book full of knowledge about herbs. +100% herbs gain',
-        isUnlocked: () => ShopItems.purchased.herbalistsStash,
-        getCost: () => ({
-            gold: 8000
-        }),
-    },{
-        id: 'advancedMagic',
-        name: 'Advanced magic',
-        type: 'book',
-        description: 'Purchase book that further increase your magic power by 50%',
-        isUnlocked: () => ShopItems.purchased.appretienceManual,
-        getCost: () => ({
-            gold: 12000
-        }),
-    },{ // Changed
-        id: 'precisionTraining',
-        name: 'Fighting skills',
-        type: 'book',
-        description: 'Purchase book, your creatures learn to be 50% more precise',
-        isUnlocked: () => ShopItems.purchased.appretienceManual,
-        getCost: () => ({
-            gold: 40000
-        }),
-    },{
-        id: 'soulHarvester2',
-        name: 'Advanced soul harvester',
-        type: 'book',
-        description: 'Purchase book that further increase your souls gain',
-        isUnlocked: () => ShopItems.purchased.summoningJobs,
-        getCost: () => ({
-            gold: 50000
-        }),
-    },{
-        id: 'boneMasterity',
-        name: 'Bones masterity',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by 75%',
-        isUnlocked: () => ShopItems.purchased.soulHarvester2,
-        getCost: () => ({
-            gold: 300000
-        }),
-    },{
-        id: 'soulHarvester3',
-        name: 'Advanced soul harvester II',
-        type: 'book',
-        description: 'Purchase book that further increase your souls gain',
-        isUnlocked: () => ShopItems.purchased.soulHarvester2,
-        getCost: () => ({
-            gold: 400000
-        }),
-    },{
-        id: 'boneMasterity2',
-        name: 'Bones masterity II',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity,
-        getCost: () => ({
-            gold: 1000000
-        }),
-    },{ // Changed
-        id: 'precisionTraining2',
-        name: 'Fighting skills 2',
-        type: 'book',
-        description: 'Purchase book, your creatures learn to be 50% more precise',
-        isUnlocked: () => ShopItems.purchased.precisionTraining,
-        getCost: () => ({
-            gold: 900000
-        }),
-    },{ // Changed
-        id: 'precisionTraining3',
-        name: 'Fighting skills 3',
-        type: 'book',
-        description: 'Purchase book, your creatures learn to be 50% more precise',
-        isUnlocked: () => ShopItems.purchased.precisionTraining2,
-        getCost: () => ({
-            gold: 8100000
-        }),
-    },{
-        id: 'boneMasterity3',
-        name: 'Bones masterity III',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity2,
-        getCost: () => ({
-            gold: 10000000
-        }),
-    },{
-        id: 'boneMasterity4',
-        name: 'Bones masterity IV',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity3,
-        getCost: () => ({
-            gold: 1.e+10
-        }),
-    },{
-        id: 'boneMasterity5',
-        name: 'Bones masterity V',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity4,
-        getCost: () => ({
-            gold: 1.e+13
-        }),
-    },{
-        id: 'boneMasterity6',
-        name: 'Bones masterity VI',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity5,
-        getCost: () => ({
-            gold: 1.e+16
-        }),
-    },{
-        id: 'boneMasterity7',
-        name: 'Bones masterity VII',
-        type: 'book',
-        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
-        isUnlocked: () => ShopItems.purchased.boneMasterity6,
-        getCost: () => ({
-            gold: 1.e+20
-        }),
-    },{
-        id: 'advancedMagic2',
-        name: 'Advanced magic II',
-        type: 'book',
-        description: 'Further increase your magic power by 50%',
-        isUnlocked: () => ShopItems.purchased.advancedMagic,
-        getCost: () => ({
-            gold: 200000
-        }),
-    },{
-        id: 'advancedMagic3',
-        name: 'Advanced magic III',
-        type: 'book',
-        description: 'Further increase your magic power by 50%',
-        isUnlocked: () => ShopItems.purchased.advancedMagic2,
-        getCost: () => ({
-            gold: 4000000
-        }),
-    }];
-
     const bannersData = [{
         id: 'orange',
         name: 'Orange banner',
@@ -592,8 +254,19 @@
 
         static skills = {};
 
-        static initialize() {
-            BasicSkills.skills = {};
+        static initialize(isBannerPrestiege) {
+            if(isBannerPrestiege && BasicSkills.skills) {
+                Object.entries(BasicSkills.skills).forEach(([key, skill]) => {
+                    BasicSkills.skills[key] = {
+                        xp: 0,
+                        level: 0,
+                        efforts: skill.efforts,
+                    };
+                });
+            } else {
+                BasicSkills.skills = {};
+            }
+
         }
 
         static skillLevel(id) {
@@ -601,18 +274,17 @@
         }
 
         static getBalanceById(resourceId, learning, bIgnoreEfficiency) {
-            let bal = 0;
+            let totl = 0;
+            let state = learning || BasicSkills.skills;
             if(resourceId === 'energy') {
-                const efficiency = BasicResources.efficiencies.energy?.efficiency || 0;
-                const list = learning ? Object.values(learning || {}) : BasicSkills.getList();
-                list.forEach(item => {
-                    if (!item.efforts) {
-                        return;
+                if(state && Object.keys(state).length) {
+                    const energyIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'energy'), { learning: {} });
+                    if(energyIncome > 0) {
+                        totl -= energyIncome * Object.values(state).reduce((acc, one) => acc += one.efforts * 0.999999, 0);
                     }
-                    bal -= +item.efforts * (bIgnoreEfficiency ? 1 : efficiency);
-                });
+                }
             }
-            return bal;
+            return totl;
         }
 
         static initSkill() {
@@ -653,6 +325,19 @@
             } else {
                 BasicSkills.skills[id].efforts = val;
             }
+        }
+
+        static getTotalInvested() {
+            return Object.values(BasicSkills.skills).reduce((acc, item) => acc += item.efforts, 0);
+        }
+
+        static setEffortsPercentage({ id, efforts }) {
+            const investedTotal = BasicSkills.getTotalInvested();
+            const oldInvested = BasicSkills.skills[id]?.efforts || 0;
+            if(!BasicSkills.skills[id]) {
+                BasicSkills.skills[id] = BasicSkills.initSkill();
+            }
+            BasicSkills.skills[id].efforts = Math.min(efforts, 1 - investedTotal + oldInvested);
         }
 
         static setEfforts({ id, efforts, isConfirmed }) {
@@ -716,6 +401,13 @@
 
         static process(dT) {
             const list = BasicSkills.getList();
+            // let mult = 1.0;
+            const totl = Object.values(BasicSkills.skills).reduce((acc, one) => acc += (one?.efforts || 0), 0);
+            if(totl > 1) {
+                Object.keys(BasicSkills.skills).forEach(key => {
+                    BasicSkills.skills[key].efforts /= totl;
+                });
+            }
             list.forEach(item => {
                 if(!item.efforts) {
                     return;
@@ -725,7 +417,12 @@
                 // const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
                 // if(hasEnough.totalPercentage >= dT) {
                 const eff = BasicResources.efficiencies.energy.efficiency;
-                const realInvested = Math.min(item.efforts * dT * eff, BasicResources.resources.energy*0.999999);
+                const energyIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'energy'), { learning: {} });
+
+                if (energyIncome <= 0) {
+                    return;
+                }
+                const realInvested = Math.min(item.efforts * energyIncome * dT * eff * 0.99999, BasicResources.resources.energy*0.999999);
 
                 BasicSkills.skills[item.id].xp += realInvested * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
                     if(item.maxXp <= BasicSkills.skills[item.id].xp) {
@@ -4264,6 +3961,24 @@
             research: 500000*Math.pow(3, level),
         }),
     },{
+        id: 'autoBanners',
+        name: 'Automated banner prestige',
+        description: 'Unlocks automatic banner resets. Initially gives 20% of normal banner prestige, but each research level increase prestige gain by 10%. Level 5 unlock new research',
+        isUnlocked: () => BasicResearch.getTotal('advancedAutomation') > 0,
+        maxLevel: 9,
+        getCost: (level) => ({
+            research: 1000000*Math.pow(1000, level),
+        }),
+    },{
+        id: 'autoFame',
+        name: 'Glory',
+        description: 'The world remembers your famous fights forever! Automated runs will use 5% of fame boost for last boss ever beaten on arena',
+        isUnlocked: () => BasicResearch.getTotal('autoBanners') > 4,
+        maxLevel: 1,
+        getCost: (level) => ({
+            research: 1.e+18,
+        }),
+    },{
         id: 'combatLogistics',
         name: 'Combat Logistics',
         description: 'Fights are 5% faster. After level 3 unlock new research.',
@@ -6078,7 +5793,7 @@
     },{
         id: 'blacksmith',
         name: 'Blacksmith',
-        description: 'Converts ore and wood to make tools.',
+        description: 'Converts ore to make tools.',
         isUnlocked: () => BasicBuilding.getBuildingLevel('forge') > 0,
         getCost: (amount) => ({
             gold: 5000 * amount,
@@ -6365,6 +6080,12 @@
             }
             BasicResources.subtract('energy', CreatureBasic.getEnergyConsumption()
                 * dT);
+            if(BasicBanners.options?.automation?.isTurnedOn) {
+                const max = CreatureBasic.getMaxCreatures();
+                if(max > 0) {
+                    CreatureBasic.summonCreature(max);
+                }
+            }
         }
 
         static postProcess(dT) {
@@ -6397,6 +6118,14 @@
 
         static banners = {};
         static prevBanners = {};
+        static options = {
+            automation: {
+                isTurnedOn: false,
+                bannerId: '',
+                numCreatures: 51,
+            }
+
+        }
 
         static fillDefaultTiers() {
             return Array.from({length: 6}).map((one, index) => ({
@@ -6405,21 +6134,56 @@
         }
 
         static getBannersOnPrestige = () => {
+            let altFame = BasicResources.getResource('fame');
+            if(BasicBanners.options?.automation?.isTurnedOn) {
+                if(BasicResearch.getResearchLevel('autoFame')) {
+                    altFame = 0.25*Math.pow(1.2,BasicMap.state.bossesArena?.maxBossLevel || 0) / 20;
+                }
+            }
             return CreatureBasic.numCreatures
                 * (1 + 0.1 * BasicBuilding.getBuildingLevel('monument')
-                    * (1 + BasicResources.getResource('fame')
-                    )
+                    * (1 + altFame)
                 );
         }
 
-        static initialize() {
+        static initialize(isBannerPrestige) {
             BasicBanners.banners = {
                 orange: BasicBanners.fillDefaultTiers(),
                 yellow: BasicBanners.fillDefaultTiers(),
                 blue: BasicBanners.fillDefaultTiers(),
                 green: BasicBanners.fillDefaultTiers()
             };
+            if(!isBannerPrestige || !BasicBanners.options) {
+                BasicBanners.options = {
+                    automation: {
+                        isTurnedOn: false,
+                        bannerId: '',
+                        numCreatures: 51,
+                    }
+
+                };
+            }
             return BasicBanners.banners;
+        }
+
+        static setAutomationOption(key, value) {
+            if(!BasicBanners.options) {
+                BasicBanners.options = {
+
+                };
+            }
+            if(!BasicBanners.options.automation) {
+                BasicBanners.options.automation = {
+                    isTurnedOn: false,
+                    bannerId: 'green',
+                    numCreatures: 51,
+                };
+            }
+            BasicBanners.options.automation[key] = value;
+            if(Number.isNaN(BasicBanners.options.automation.numCreatures) || BasicBanners.options.automation.numCreatures < 51) {
+                BasicBanners.options.automation.numCreatures = 51;
+            }
+            console.log('BasicBanners.options.automation', BasicBanners.options.automation);
         }
 
         static saveBannersToPrev() {
@@ -6525,9 +6289,9 @@
                     // convMult *= 5;
                     let minus = 0.1 * newBannersArray[iConvertFrom].amount;
                     let plus = minus / 5;
-                    if(iTierCalculated === 2 && id === 'green') {
+                    /*if(iTierCalculated === 2 && id === 'green') {
                         console.log(`from: ${iConvertFrom} to ${iTierCalculated}`, minus, plus);
-                    }
+                    }*/
                     if(plus >= 1) {
                         newBannersArray[iConvertFrom+1].amount += plus;
                         newBannersArray[iConvertFrom].amount -= minus;
@@ -6592,6 +6356,19 @@
             }
             console.log('optimizedIn: ', nI);
             BasicBanners.banners[id] = optimal.newBannersArray;
+        }
+
+        static process(dT) {
+            if(BasicBanners.options?.automation?.isTurnedOn) {
+                if(!BasicResearch.getResearchLevel('autoBanners')) {
+                    BasicBanners.options.automation.isTurnedOn = false;
+                }
+                const targetCreeps = BasicBanners.options?.automation?.numCreatures;
+                const bannerId = BasicBanners.options?.automation?.bannerId;
+                if(CreatureBasic.numCreatures >= targetCreeps && BasicRun.timeSpent > 45) {
+                    BasicBanners.doPrestige(bannerId, 0.1 + 0.1 * BasicResearch.getResearchLevel('autoBanners'), true);
+                }
+            }
         }
 
         static getList() {
@@ -6694,7 +6471,7 @@
             return result;
         }
 
-        static doPrestige(id) {
+        static doPrestige(id, coeff = 1) {
             if(CreatureBasic.numCreatures < 51) {
                 return;
             }
@@ -6702,10 +6479,12 @@
             if(!BasicBanners.banners[id]) {
                 BasicBanners.banners[id] = BasicBanners.fillDefaultTiers();
             }
-            BasicBanners.banners[id][0].amount += amount;
+            BasicBanners.banners[id][0].amount += amount * coeff;
             BasicBanners.saveBannersToPrev();
             BasicRun.initialize(true);
-            BasicTemper.state.currentId = 'select';
+            if(!BasicBanners.options?.automation?.isTurnedOn) {
+                BasicTemper.state.currentId = 'select';
+            }
         }
 
         static doConvert({ id, tierIndex, percentage }) {
@@ -6719,7 +6498,14 @@
 
         static sendToUI() {
             const result = BasicBanners.getList();
-            ColibriWorker.sendToClient('set_banners_state', result);
+            ColibriWorker.sendToClient('set_banners_state', {
+                list: result,
+                automation: BasicResearch.getResearchLevel('autoBanners') ? BasicBanners.options?.automation || {
+                    isTurnedOn: false,
+                    numCreatures: 51,
+                    bannerId: 'green',
+                } : null,
+            });
         }
 
 
@@ -6806,6 +6592,344 @@
 
 
     }
+
+    const shopData = [{
+        id: 'notebook',
+        name: 'Notebook',
+        type: 'book',
+        description: 'A book for storing notes and goals. Adds 1 automation slot.',
+        isUnlocked: () => true,
+        getCost: () => ({
+            gold: 10,
+        }),
+    },{  // Changed
+        id: 'manual',
+        name: 'Labor Manual',
+        type: 'book',
+        description: 'A manual on effective laboring. Work at Stable gives twice as much gold at twice the cost.',
+        isUnlocked: () => true,
+        getCost: () => ({
+            gold: 10,
+        }),
+    },{ // Changed
+        id: 'gymnastics',
+        name: 'Gymnastic\'s manual',
+        type: 'book',
+        description: 'A manual for general exercising. Train stamina is now twice as efficient.',
+        isUnlocked: () => true,
+        getCost: () => ({
+            gold: 15,
+        }),
+    },{
+        id: 'pocket',
+        name: 'Coin Bag',
+        type: 'trinket',
+        description: 'A small coin bag that increases your maximum gold by 20.',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 15,
+        getCost: () => ({
+            gold: 20,
+        }),
+    },{
+        id: 'bookOfMagic',
+        name: 'Book of basic magic',
+        type: 'book',
+        description: 'Unlocks mana and some basic spells',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 25,
+        getCost: () => ({
+            gold: 40,
+        }),
+    },{
+        id: 'magicStamp',
+        name: 'Magic stamp',
+        type: 'trinket',
+        description: 'Provides ability to store more magic powers. +10 max mana, +25% spells power',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 55 && ShopItems.purchased.bookOfMagic,
+        getCost: () => ({
+            gold: 80,
+        }),
+    },{
+        id: 'equipment',
+        name: 'Training equipment',
+        type: 'trinket',
+        description: 'Increase your training efficiency by 100%',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 75,
+        getCost: () => ({
+            gold: 100
+        }),
+    },{
+        id: 'bookOfMeditation',
+        name: 'Book of meditation',
+        type: 'book',
+        description: 'Purchase book full of usefull meditation techniques. Meditation takes twice as much energy but provides 2x mana.',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 55,
+        getCost: () => ({
+            gold: 120,
+            energy: 30
+        }),
+    },{
+        id: 'shovel',
+        name: 'Shovel',
+        type: 'trinket',
+        description: 'Purchase a shovel to make your work even more efficient. Work takes 2 energy more but provides 2 more gold.',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 125,
+        getCost: () => ({
+            gold: 150,
+            energy: 30
+        }),
+    },{
+        id: 'timeManagement',
+        name: 'Time-management',
+        type: 'book',
+        description: 'Purchase time-management book to learn how to keep 2 actions auto-running',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 75,
+        getCost: () => ({
+            gold: 100
+        }),
+    },{
+        id: 'bargaging',
+        name: 'Bargaining',
+        type: 'book',
+        description: 'Learn basics of bargaining - improve your gold earned by 2 per work action',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 150,
+        getCost: () => ({
+            gold: 250
+        }),
+    },{ // Changed
+        id: 'stash',
+        name: 'Stash',
+        type: 'trinket',
+        description: 'Increases your maximum gold by 200',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 150,
+        getCost: () => ({
+            gold: 300
+        }),
+    },{ // Changed
+        id: 'summoning',
+        name: 'Basic summoning',
+        type: 'book',
+        description: 'Purchase basic Summoning manual',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 250,
+        getCost: () => ({
+            gold: 500
+        }),
+    },{
+        id: 'bookOfMultitasking',
+        name: 'Multi-tasking',
+        type: 'book',
+        description: 'Learn how to manage 2 more tasks simultaneously. More than 2 automations making you less efficient.',
+        isUnlocked: () => resourcesData.find(one => one.id === 'gold').getMax() > 400,
+        getCost: () => ({
+            gold: 600
+        }),
+    },{
+        id: 'manaOrb',
+        name: 'Mana orb',
+        type: 'trinket',
+        description: 'Purchase orb that improves your meditation. Meditation takes 10 more energy but provide 1 more mana',
+        isUnlocked: () =>resourcesData.find(one => one.id === 'gold').getMax() > 300,
+        getCost: () => ({
+            gold: 750,
+            energy: 100
+        }),
+    },{ 
+        id: 'betterSummoning',
+        name: 'Summoning Effiency',
+        type: 'book',
+        description: 'Purchase summoning efficiency book to decrease energy consumed by creatures by 0.5',
+        isUnlocked: () => ShopItems.purchased.summoning,
+        getCost: () => ({
+            gold: 1000
+        }),
+    },{ // Changed
+        id: 'herbalism',
+        name: 'Herbalism',
+        type: 'book',
+        description: 'Purchase herbalism book to start creation of flasks',
+        isUnlocked: () => ShopItems.purchased.summoning,
+        getCost: () => ({
+            gold: 1000
+        }),
+    },{
+        id: 'soulHarvester',
+        name: 'Soul harvester',
+        type: 'book',
+        description: 'Purchase knowledge of better soul harvesting',
+        isUnlocked: () => ShopItems.purchased.summoning,
+        getCost: () => ({
+            gold: 1500
+        }),
+    },{ // Changed
+        id: 'appretienceManual',
+        name: 'Manual of appretience',
+        type: 'book',
+        description: 'Empower all your spells by 50%',
+        isUnlocked: () => ShopItems.purchased.soulHarvester,
+        getCost: () => ({
+            gold: 2000
+        }),
+    },{ // Changed
+        id: 'summoningJobs',
+        name: 'Summoning Jobs',
+        type: 'book',
+        description: 'Purchase summoning jobs knowledge book to increase job efficiency. +10% creature production',
+        isUnlocked: () => ShopItems.purchased.summoning,
+        getCost: () => ({
+            gold: 4000
+        }),
+    },{
+        id: 'herbalistsStash',
+        name: 'Herbalists stash',
+        type: 'trinket',
+        description: 'Purchase special container for herbs. +20 max herbs.',
+        isUnlocked: () => ShopItems.purchased.herbalism,
+        getCost: () => ({
+            gold: 5000
+        }),
+    },{
+        id: 'herbalismKnowledge',
+        name: 'Advanced herbalism',
+        type: 'trinket',
+        description: 'Purchase book full of knowledge about herbs. +100% herbs gain',
+        isUnlocked: () => ShopItems.purchased.herbalistsStash,
+        getCost: () => ({
+            gold: 8000
+        }),
+    },{
+        id: 'advancedMagic',
+        name: 'Advanced magic',
+        type: 'book',
+        description: 'Purchase book that further increase your magic power by 50%',
+        isUnlocked: () => ShopItems.purchased.appretienceManual,
+        getCost: () => ({
+            gold: 12000
+        }),
+    },{ // Changed
+        id: 'precisionTraining',
+        name: 'Fighting skills',
+        type: 'book',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.appretienceManual && BasicResearch.getResearchLevel('fighting') > 0,
+        getCost: () => ({
+            gold: 40000
+        }),
+    },{
+        id: 'soulHarvester2',
+        name: 'Advanced soul harvester',
+        type: 'book',
+        description: 'Purchase book that further increase your souls gain',
+        isUnlocked: () => ShopItems.purchased.summoningJobs,
+        getCost: () => ({
+            gold: 50000
+        }),
+    },{
+        id: 'boneMasterity',
+        name: 'Bones masterity',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by 75%',
+        isUnlocked: () => ShopItems.purchased.soulHarvester2,
+        getCost: () => ({
+            gold: 300000
+        }),
+    },{
+        id: 'soulHarvester3',
+        name: 'Advanced soul harvester II',
+        type: 'book',
+        description: 'Purchase book that further increase your souls gain',
+        isUnlocked: () => ShopItems.purchased.soulHarvester2,
+        getCost: () => ({
+            gold: 400000
+        }),
+    },{
+        id: 'boneMasterity2',
+        name: 'Bones masterity II',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity,
+        getCost: () => ({
+            gold: 1000000
+        }),
+    },{ // Changed
+        id: 'precisionTraining2',
+        name: 'Fighting skills 2',
+        type: 'book',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.precisionTraining,
+        getCost: () => ({
+            gold: 900000
+        }),
+    },{ // Changed
+        id: 'precisionTraining3',
+        name: 'Fighting skills 3',
+        type: 'book',
+        description: 'Purchase book, your creatures learn to be 50% more precise',
+        isUnlocked: () => ShopItems.purchased.precisionTraining2,
+        getCost: () => ({
+            gold: 8100000
+        }),
+    },{
+        id: 'boneMasterity3',
+        name: 'Bones masterity III',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity2,
+        getCost: () => ({
+            gold: 10000000
+        }),
+    },{
+        id: 'boneMasterity4',
+        name: 'Bones masterity IV',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity3,
+        getCost: () => ({
+            gold: 1.e+10
+        }),
+    },{
+        id: 'boneMasterity5',
+        name: 'Bones masterity V',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity4,
+        getCost: () => ({
+            gold: 1.e+13
+        }),
+    },{
+        id: 'boneMasterity6',
+        name: 'Bones masterity VI',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity5,
+        getCost: () => ({
+            gold: 1.e+16
+        }),
+    },{
+        id: 'boneMasterity7',
+        name: 'Bones masterity VII',
+        type: 'book',
+        description: 'Purchase book that decrease souls consumed by creatures by another 75%',
+        isUnlocked: () => ShopItems.purchased.boneMasterity6,
+        getCost: () => ({
+            gold: 1.e+20
+        }),
+    },{
+        id: 'advancedMagic2',
+        name: 'Advanced magic II',
+        type: 'book',
+        description: 'Further increase your magic power by 50%',
+        isUnlocked: () => ShopItems.purchased.advancedMagic,
+        getCost: () => ({
+            gold: 200000
+        }),
+    },{
+        id: 'advancedMagic3',
+        name: 'Advanced magic III',
+        type: 'book',
+        description: 'Further increase your magic power by 50%',
+        isUnlocked: () => ShopItems.purchased.advancedMagic2,
+        getCost: () => ({
+            gold: 4000000
+        }),
+    }];
 
     class ShopItems {
 
@@ -7717,8 +7841,30 @@
 
         static actions = {};
 
-        static init() {
+        static prevRunActions = {
+            list: [],
+            doRemember: true,
+        };
+
+        static init(isBannerPrestige) {
+            if(isBannerPrestige) {
+                if(!BasicActions.prevRunActions) {
+                    BasicActions.prevRunActions = {};
+                }
+                BasicActions.prevRunActions.list = BasicActions.getAutomatedList();
+                BasicActions.prevRunActions.doRemember = true;
+            }
             BasicActions.actions = {};
+        }
+
+        static getAutomatedList() {
+            const list = [];
+            for(let key in BasicActions.actions) {
+                if(BasicActions.actions[key].isAutomated) {
+                    list.push(key);
+                }
+            }
+            return list;
         }
 
         static getActionsEfficiency = () => {
@@ -7815,6 +7961,13 @@
                     cooldown: 0,
                 };
             }
+            if(!BasicActions.prevRunActions) {
+                BasicActions.prevRunActions = {
+                    doRemember: false,
+                    list: [],
+                };
+            }
+            BasicActions.prevRunActions.doRemember = false;
             if(BasicActions.actions[id].isAutomated) {
                 BasicActions.actions[id].isAutomated = false;
             } else {
@@ -7838,13 +7991,31 @@
         }
 
         static process(dT) {
+            let usedAutomations = [];
+            if(!BasicActions.actions['magicLessons']) {
+                BasicActions.actions['magicLessons'] = {
+                    performed: 0,
+                    cooldown: 0,
+                };
+            }
             for(const key in BasicActions.actions) {
                 BasicActions.actions[key].cooldown -= dT * (!!BasicActions.actions[key].isAutomated ? BasicActions.getActionsEfficiency() : 1);
                 if(BasicActions.actions[key].cooldown < 0) {
                     BasicActions.actions[key].cooldown = 0;
                 }
 
+                // when auto-banner - perform magicLessons unless max mana > 50
+                // console.log('chckAction', key, BasicBanners.options?.automation?.isTurnedOn, resourcesData.find(one => one.id === 'mana').getMax());
+                if(key === 'magicLessons' && BasicBanners.options?.automation?.isTurnedOn && resourcesData.find(one => one.id === 'mana').getMax() < 50) {
+                    const action = actionsData.find(one => one.id === key);
+                    const cost = BasicResources.checkResourcesAvailable(action.getCost());
+                    if(BasicActions.actions[key].cooldown <= 0 && cost.isAvailable) {
+                        BasicActions.performAction(key);
+                    }
+                }
+
                 if(BasicActions.actions[key].isAutomated) {
+                    usedAutomations.push(key);
                     const action = actionsData.find(one => one.id === key);
                     const cost = BasicResources.checkResourcesAvailable(action.getCost());
                     // calculate efficiency for avg balance
@@ -7860,6 +8031,24 @@
                         BasicActions.performAction(key);
                     }
                 }
+            }
+            const maxAutomations = 1 + (ShopItems.purchased.timeManagement ? 1 : 0)
+                + (ShopItems.purchased.bookOfMultitasking ? 2 : 0);
+            if(maxAutomations > 0 && usedAutomations.length < BasicActions.prevRunActions?.list?.length && BasicActions.prevRunActions.doRemember) {
+                const diffToFill = BasicActions.prevRunActions.list.length - usedAutomations.length;
+                const diff = BasicActions.prevRunActions.list.filter(one => !usedAutomations.includes(one) && actionsData.find(i => i.id === one)?.isUnlocked());
+                const listToFill = diff.slice(0, Math.min(diffToFill, maxAutomations - usedAutomations.length));
+                console.log('BasicActions.prevRunActions', BasicActions.prevRunActions, usedAutomations, maxAutomations, diff, listToFill);
+                listToFill.forEach(key => {
+                    if(!BasicActions.actions[key]) {
+                        BasicActions.actions[key] = {
+                            performed: 0,
+                            cooldown: 0,
+                            efficiency: 1,
+                        };
+                    }
+                    BasicActions.actions[key].isAutomated = true;
+                });
             }
         }
 
@@ -8250,20 +8439,20 @@
 
                 const creaturesBalance = CreatureJobs.getBalanceById(res.id, undefined, true);
 
-                const skillBalance = BasicSkills.getBalanceById(res.id, undefined, true);
+                // const skillBalance = BasicSkills.getBalanceById(res.id, undefined, true);
 
-                const actionsBalance =  BasicActions.getBalanceById(res.id, true);
+                const actionsBalance = BasicActions.getBalanceById(res.id, true);
 
-                let mitigatableBalance = creaturesBalance + skillBalance;
+                let mitigatableBalance = creaturesBalance;// + skillBalance;
 
                 const balanceWOutActions = nonMitigatableBalance + mitigatableBalance;
 
                 mitigatableBalance += actionsBalance;
 
                 let mitiToDump = 0;
-                if(skillBalance < 0) {
+               /* if(skillBalance < 0) {
                     mitiToDump += skillBalance;
-                }
+                }*/
                 if(creaturesBalance < 0) {
                     mitiToDump += creaturesBalance;
                 }
@@ -8416,8 +8605,8 @@
             BasicResearch.onPrestige();
 
             BasicResources.initialize(isBannerPrestige);
-            BasicActions.init();
-            BasicSkills.initialize();
+            BasicActions.init(isBannerPrestige);
+            BasicSkills.initialize(isBannerPrestige);
             ShopItems.initialize(isBannerPrestige);
             CreatureBasic.initialize(isBannerPrestige);
             CreatureJobs.initialize(isBannerPrestige);
@@ -8445,7 +8634,6 @@
                 dT = 2 * dt;
             }
             BasicResources.preRun(dT);
-            // ok
             BasicResources.process(dT);
             CreatureJobs.process(dT);
             CreatureBasic.process(dT);
@@ -8458,9 +8646,9 @@
             ShopItems.process(dT);
             BasicAuras.process(dT);
             BasicActions.process(dT);
+            BasicBanners.process(dT);
             BasicHeirlooms.process();
             CreatureBasic.postProcess(dT);
-            // bad
             BasicResources.postProcess(dT);
             BasicRun.timeSpent += dT;
             BasicStatistics.inc('timeSpent', dT);
@@ -8501,6 +8689,7 @@
                 aurasPresets: AurasPresets.state || {},
                 resources: BasicResources.resources,
                 actions: BasicActions.actions,
+                prevRunActions: BasicActions.prevRunActions,
                 shopItems: ShopItems.purchased,
                 shopSettings: ShopItems.settings,
                 numCreatures: CreatureBasic.numCreatures || 0,
@@ -8510,6 +8699,7 @@
                 skills: BasicSkills.skills || {},
                 banners: BasicBanners.banners || BasicBanners.initialize(),
                 prevBanners: BasicBanners.prevBanners || {},
+                bannerOptions: BasicBanners.options || {},
                 general: {
                     timeSpent: BasicRun.timeSpent || 0,
                 },
@@ -8538,6 +8728,7 @@
             BasicBuilding.usedLand = null;
             BasicResources.resources = save.resources;
             BasicActions.actions = save.actions;
+            BasicActions.prevRunActions = save.prevRunActions;
             ShopItems.purchased = save.shopItems;
             ShopItems.settings = save.shopSettings;
             if(!ShopItems.settings) {
@@ -8556,6 +8747,7 @@
             BasicRun.timeSpent = save.general?.timeSpent || 0;
             BasicBanners.banners = save.banners || BasicBanners.initialize();
             BasicBanners.prevBanners = save.prevBanners;
+            BasicBanners.options = save.bannerOptions;
             if(!BasicBanners.prevBanners) {
                 BasicBanners.saveBannersToPrev();
             }
@@ -8742,6 +8934,10 @@
         BasicBanners.doOptimizeAll(id);
     });
 
+    ColibriWorker.on('set_automation_option', ({ key, value }) => {
+        BasicBanners.setAutomationOption(key, value);
+    });
+
     ColibriWorker.on('do_select_temper', ({ id }) => {
         console.log('selecting temper: ', id);
         BasicTemper.setCurrentTemper(id);
@@ -8752,7 +8948,7 @@
     });
 
     ColibriWorker.on('change_learning_efforts', ({ id, efforts, isConfirmed }) => {
-        BasicSkills.setEfforts({ id, efforts, isConfirmed });
+        BasicSkills.setEffortsPercentage({ id, efforts });
     });
 
     ColibriWorker.on('all_learning_efforts', ({ id, val }) => {
