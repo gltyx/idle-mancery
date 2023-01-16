@@ -417,20 +417,22 @@
                 // const hasEnough = BasicResources.checkResourcesAvailable({ energy: item.efforts });
                 // if(hasEnough.totalPercentage >= dT) {
                 const eff = BasicResources.efficiencies.energy.efficiency;
-                const energyIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'energy'), { learning: {} });
-
-                if (energyIncome <= 0) {
+                const energyIncome = BasicResources.getBalance(resourcesData.find(one => one.id === 'energy'), { learning: {} }, true);
+                // console.log('learning[pre-apply]: ', item, energyIncome);
+                if (energyIncome <= 0 || Number.isNaN(energyIncome)) {
+                    // console.warn('BUGGED!');
                     return;
                 }
                 const realInvested = Math.min(item.efforts * energyIncome * dT * eff * 0.99999, BasicResources.resources.energy*0.999999);
 
                 BasicSkills.skills[item.id].xp += realInvested * (1 + 0.5 * BasicResearch.getResearchLevel('selfDevelopment'));
-                    if(item.maxXp <= BasicSkills.skills[item.id].xp) {
-                        BasicSkills.skills[item.id].xp = 0;
-                        BasicSkills.skills[item.id].level++;
-                    }
+                // console.log('learning[apply]: ', item, realInvested, BasicSkills.skills[item.id]);
+                if(item.maxXp <= BasicSkills.skills[item.id].xp) {
+                    BasicSkills.skills[item.id].xp = 0;
+                    BasicSkills.skills[item.id].level++;
+                }
 
-                    BasicResources.subtractBatch({ energy: realInvested });
+                BasicResources.subtractBatch({ energy: realInvested });
                 // }
             });
         }
@@ -3972,7 +3974,7 @@
     },{
         id: 'autoFame',
         name: 'Glory',
-        description: 'The world remembers your famous fights forever! Automated runs will use 5% of fame boost for last boss ever beaten on arena',
+        description: 'The world remembers your famous fights forever! Automated runs will use 2% of fame boost for last boss ever beaten on arena',
         isUnlocked: () => BasicResearch.getTotal('autoBanners') > 4,
         maxLevel: 1,
         getCost: (level) => ({
@@ -4609,7 +4611,7 @@
             }
         }
 
-        static getBalanceById(resourceId, updatedWorkers = null, bIgnoreEfficiency = false) {
+        static getBalanceById(resourceId, updatedWorkers = null, bIgnoreEfficiency = false, logBreakdown = false) {
             let bal = 0;
             if(!updatedWorkers) {
                 updatedWorkers = CreatureJobs.workers;
@@ -4624,6 +4626,9 @@
                 if(cost && cost[resourceId]) {
                     bal -= cost[resourceId] * (bIgnoreEfficiency ? 1 : state.efficiency);
                 }
+                /*if(logBreakdown) {
+                    console.log('PER_CREEP: ', jobId, bal, state, gain);
+                }*/
             });
             return bal;
         }
@@ -5641,9 +5646,15 @@
         return 2.0 - BasicResearch.getResearchLevel('timeScience') * 0.25;
     };
 
-    const globalMult = () => (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect()
+    const globalMult = () => {
+        const mlt = (1 + (ShopItems.purchased.summoningJobs ? 0.1 : 0))*BasicResources.getFlasksEffect()
         *BasicResources.getToolsEffect()
         * (1 + 0.2 * BasicResearch.getResearchLevel('motivation'));
+        if(Number.isNaN(mlt)) {
+            console.error('NaN mult: ', mlt, BasicResources.getFlasksEffect(), BasicResources.resources.flasks);
+        }
+        return mlt;
+    };
 
     const jobsData = [{
         id: 'supporter',
@@ -6083,7 +6094,7 @@
             if(BasicBanners.options?.automation?.isTurnedOn) {
                 const max = CreatureBasic.getMaxCreatures();
                 if(max > 0) {
-                    CreatureBasic.summonCreature(max);
+                    CreatureBasic.summonCreature(1.e+306);
                 }
             }
         }
@@ -6137,7 +6148,7 @@
             let altFame = BasicResources.getResource('fame');
             if(BasicBanners.options?.automation?.isTurnedOn) {
                 if(BasicResearch.getResearchLevel('autoFame')) {
-                    altFame = 0.25*Math.pow(1.2,BasicMap.state.bossesArena?.maxBossLevel || 0) / 20;
+                    altFame = 0.25*Math.pow(1.2,BasicMap.state.bossesArena?.maxBossLevel || 0) / 50;
                 }
             }
             return CreatureBasic.numCreatures
@@ -6366,7 +6377,7 @@
                 const targetCreeps = BasicBanners.options?.automation?.numCreatures;
                 const bannerId = BasicBanners.options?.automation?.bannerId;
                 if(CreatureBasic.numCreatures >= targetCreeps && BasicRun.timeSpent > 45) {
-                    BasicBanners.doPrestige(bannerId, 0.1 + 0.1 * BasicResearch.getResearchLevel('autoBanners'), true);
+                    BasicBanners.doPrestige(bannerId, 0.2 + 0.1 * BasicResearch.getResearchLevel('autoBanners'), true);
                 }
             }
         }
@@ -7911,6 +7922,9 @@
             if(cost && cost[resourceId]) {
                 bal -= cost[resourceId] * BasicActions.getActionsEfficiency() * (bIgnoreEfficiency ? 1 : BasicActions.actions[actionId].efficiency) / action.getCooldown();
             }
+            if(Number.isNaN(bal)) {
+                console.error('NaN DETECTED: ', resourceId, actionId, bal, profit, cost, action.getCooldown(), BasicActions.getActionsEfficiency(), BasicActions.actions[actionId].efficiency);
+            }
             return bal;
         }
 
@@ -7936,6 +7950,7 @@
             const currState = BasicActions.actions[id] || {
                 performed: 0,
                 cooldown: 0,
+                efficiency: 1,
             };
             if(available.isAvailable && currState.cooldown <= 0) {
                 BasicResources.subtractBatch(cost);
@@ -7944,6 +7959,7 @@
                     BasicActions.actions[id] = {
                         performed: 0,
                         cooldown: 0,
+                        efficiency: 1,
                     };
                 }
                 BasicActions.actions[id].performed++;
@@ -7959,6 +7975,7 @@
                 BasicActions.actions[id] = {
                     performed: 0,
                     cooldown: 0,
+                    efficiency: 1,
                 };
             }
             if(!BasicActions.prevRunActions) {
@@ -7996,6 +8013,7 @@
                 BasicActions.actions['magicLessons'] = {
                     performed: 0,
                     cooldown: 0,
+                    efficiency: 1,
                 };
             }
             for(const key in BasicActions.actions) {
@@ -8033,12 +8051,13 @@
                 }
             }
             const maxAutomations = 1 + (ShopItems.purchased.timeManagement ? 1 : 0)
-                + (ShopItems.purchased.bookOfMultitasking ? 2 : 0);
+                + (ShopItems.purchased.bookOfMultitasking ? 2 : 0)
+                + (BasicResearch.getResearchLevel('machinery') ? 1 : 0);
             if(maxAutomations > 0 && usedAutomations.length < BasicActions.prevRunActions?.list?.length && BasicActions.prevRunActions.doRemember) {
                 const diffToFill = BasicActions.prevRunActions.list.length - usedAutomations.length;
                 const diff = BasicActions.prevRunActions.list.filter(one => !usedAutomations.includes(one) && actionsData.find(i => i.id === one)?.isUnlocked());
                 const listToFill = diff.slice(0, Math.min(diffToFill, maxAutomations - usedAutomations.length));
-                console.log('BasicActions.prevRunActions', BasicActions.prevRunActions, usedAutomations, maxAutomations, diff, listToFill);
+                // console.log('BasicActions.prevRunActions', BasicActions.prevRunActions, usedAutomations, maxAutomations, diff, listToFill);
                 listToFill.forEach(key => {
                     if(!BasicActions.actions[key]) {
                         BasicActions.actions[key] = {
@@ -8299,15 +8318,15 @@
         static resourcesMax = {};
 
         static getFlasksEffect() {
-            return 1 + 0.045*Math.pow((BasicResources.resources.flasks || 0), 0.5)
+            return 1 + 0.045*Math.pow(Math.max(BasicResources.resources.flasks || 0, 0), 0.5)
         }
 
         static getToolsEffect() {
-            return 1 + 0.015*Math.pow((BasicResources.resources.tools || 0), 0.4)
+            return 1 + 0.015*Math.pow(Math.max(BasicResources.resources.tools || 0, 0), 0.4)
         }
 
         static getDragonToolsEffect() {
-            return 1 + 1.e-3*Math.pow((BasicResources.resources.dragoniteTools || 0),0.4);
+            return 1 + 1.e-3*Math.pow(Math.max(BasicResources.resources.dragoniteTools || 0, 0),0.4);
         }
 
         static initialize(isFromPrestiege = false) {
@@ -8421,10 +8440,20 @@
             return Math.max(0,Math.min(BasicResources.resources[id], BasicResources.resourcesMax[id]));
         }
 
-        static getBalance(one, newState = {}) {
+        static getBalance(one, newState = {}, logBreakdown = false) {
+            /*if(logBreakdown) {
+                console.log('breakDown: ', {
+                    base: one.getIncome(),
+                    creatures: CreatureBasic.getBalanceById(one.id),
+                    jobs: CreatureJobs.getBalanceById(one.id, newState?.creatureJobs),
+                    skills: BasicSkills.getBalanceById(one.id, newState?.learning),
+                    actions: BasicActions.getBalanceById(one.id),
+                    auras: BasicAuras.getBalanceById(one.id, newState?.auras)
+                })
+            }*/
             return one.getIncome()
             + CreatureBasic.getBalanceById(one.id)
-            + CreatureJobs.getBalanceById(one.id, newState?.creatureJobs)
+            + CreatureJobs.getBalanceById(one.id, newState?.creatureJobs, false, logBreakdown)
             + BasicSkills.getBalanceById(one.id, newState?.learning)
             + BasicActions.getBalanceById(one.id)
             + BasicAuras.getBalanceById(one.id, newState?.auras)
